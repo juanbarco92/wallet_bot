@@ -4,6 +4,7 @@ from typing import Dict, Optional, List, Tuple
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 import logging
+from src.config import CATEGORIES_CONFIG
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -146,7 +147,20 @@ class TransactionsBot:
             self.flow_data[target_message_id] = state
             
             # Reply with category selection
-            keyboard = self._get_category_keyboard()
+            # Default scope for manual flow is Personal unless we add a question for it.
+            # We haven't asked for scope in manual flow yet. 
+            # For now, let's assume Personal or ask? 
+            # The current manual flow puts "Unknown" or just skips scope?
+            # Actually, `handle_message` is used for SPLITS too, where scope exists.
+            
+            # If manual flow (session exists), we need to ask scope or default it.
+            # But wait, manual flow just asks AMOUNT then DESC then `process_manual_transaction` -> `ask_user_for_category`.
+            # So `ask_user_for_category` asks for SCOPE.
+            # So manual flow logic here is actually fine as is, because `handle_message` implementation for "WAITING_AMOUNT" 
+            # is only for the SPLIT logic (which already has a scope in state).
+            
+            current_scope = state.get("scope", "Personal")
+            keyboard = self._get_category_keyboard(current_scope)
             
             try:
                 await context.bot.edit_message_text(
@@ -182,35 +196,44 @@ class TransactionsBot:
 
         # 2. Save
         if self.loader:
-            for category, scope, amount in splits:
+            for category, scope, amount, user_who_paid, tx_type in splits:
                 t_copy = transaction.copy()
                 t_copy['amount'] = amount
-                self.loader.append_transaction(t_copy, category, scope=scope)
+                self.loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
             
             # Confirm
             await self.application.bot.send_message(chat_id=self.chat_id, text="💾 Transacción guardada en Google Sheets.")
         else:
             await self.application.bot.send_message(chat_id=self.chat_id, text="⚠️ Error: No hay conexión con Google Sheets (Loader no configurado).")
 
+    def _get_category_keyboard(self, scope="Personal"):
+        """Generates keyboard from config based on scope."""
+        categories = CATEGORIES_CONFIG.get(scope, {})
+        keyboard = []
+        row = []
+        for cat in categories.keys():
+            row.append(InlineKeyboardButton(cat, callback_data=f"CAT|{cat}"))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
+        return keyboard
 
-    def _get_category_keyboard(self):
-        return [
-            [
-                InlineKeyboardButton("🚗 Parqueadero", callback_data="CAT|🚗 Parqueadero"),
-                InlineKeyboardButton("🍔 Comida", callback_data="CAT|🍔 Comida"),
-            ],
-            [
-                InlineKeyboardButton("🛒 Mercado", callback_data="CAT|🛒 Mercado"),
-                InlineKeyboardButton("🏥 Salud", callback_data="CAT|🏥 Salud"),
-            ],
-            [
-                InlineKeyboardButton("🎬 Entretenimiento", callback_data="CAT|🎬 Entretenimiento"),
-                InlineKeyboardButton("💳 Servicios", callback_data="CAT|💳 Servicios"),
-            ],
-            [
-                InlineKeyboardButton("❔ Otros", callback_data="CAT|❔ Otros")
-            ]
-        ]
+    def _get_subcategory_keyboard(self, category, scope="Personal"):
+        """Generates subcategory keyboard for a given category and scope."""
+        categories = CATEGORIES_CONFIG.get(scope, {})
+        subcats = categories.get(category, [])
+        keyboard = []
+        row = []
+        for sub in subcats:
+            row.append(InlineKeyboardButton(sub, callback_data=f"SUBCAT|{sub}"))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
+        return keyboard
 
     async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
@@ -281,6 +304,7 @@ class TransactionsBot:
         elif step == "MULTIPLE":
             is_multiple = (value == "Yes")
             self.flow_data[message_id]["is_multiple"] = is_multiple
+            scope = self.flow_data[message_id]["scope"]
             
             if is_multiple:
                 total = self.flow_data[message_id]["total_amount"]
@@ -292,7 +316,7 @@ class TransactionsBot:
                     text=f"Total: ${total:,.2f}\nRestante por asignar: ${remaining:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para la primera categoría."
                 )
             else:
-                keyboard = self._get_category_keyboard()
+                keyboard = self._get_category_keyboard(scope)
                 await query.edit_message_text(
                     text="Selecciona la categoría:",
                     reply_markup=InlineKeyboardMarkup(keyboard)
@@ -300,47 +324,69 @@ class TransactionsBot:
 
         elif step == "CAT":
             category = value
+            # Store selected category
+            self.flow_data[message_id]["pending_category"] = category
             scope = self.flow_data[message_id]["scope"]
-            state = self.flow_data[message_id]
             
-            if state.get("is_multiple"):
-                amount = state.get("current_split_amount", 0)
-                
-                # Add split
-                state["splits"].append((category, scope, amount))
-                
-                # Recalculate remaining
-                total = state["total_amount"]
-                current_assigned = sum(s[2] for s in state["splits"])
-                remaining = total - current_assigned
-                state["remaining_amount"] = remaining
-                
-                if remaining > 1.0: # Tolerance
-                     state["status"] = "WAITING_AMOUNT"
-                     self.flow_data[message_id] = state
-                     await query.edit_message_text(
-                        text=f"✅ Asignado: ${amount:,.2f} a {category}\nRestante: ${remaining:,.2f}\n\n🔢 *RESPONDE* con el siguiente valor."
-                    )
-                elif remaining < -1.0: 
-                     # Remove last and retry
-                     state["splits"].pop()
-                     state["remaining_amount"] = total - sum(s[2] for s in state["splits"])
-                     state["status"] = "WAITING_AMOUNT"
-                     self.flow_data[message_id] = state
-                     
-                     await query.edit_message_text(
-                        text=f"⚠️ Error: Asignaste ${current_assigned:,.2f}, que supera el total.\nIntenta de nuevo el último monto."
-                     )
-                else:
-                    # Done
-                    state["splits"][-1] = (category, scope, amount + remaining) # Adjust last cent/peso
-                    await self._trigger_confirmation(update, context, message_id, query)
+            # Check for Subcategories
+            categories_dict = CATEGORIES_CONFIG.get(scope, {})
+            subcats = categories_dict.get(category, [])
             
+            if subcats:
+                # Ask for Subcategory
+                keyboard = self._get_subcategory_keyboard(category, scope)
+                await query.edit_message_text(
+                    text=f"Categoría: {category}. Selecciona la subcategoría:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
             else:
-                # Single
-                total = state["total_amount"]
-                state["splits"] = [(category, scope, total)]
-                await self._trigger_confirmation(update, context, message_id, query)
+                # No subcategories, finish with main category
+                await self._finalize_classification_step(update, context, message_id, category)
+
+        elif step == "SUBCAT":
+             subcategory = value
+             parent_category = self.flow_data[message_id].get("pending_category", "")
+             
+             # Format: "Category - Subcategory"
+             final_name = f"{parent_category} - {subcategory}"  if parent_category else subcategory
+             
+             # Check for [Bolsillo] Logic
+             if subcategory.startswith("[Bolsillo]"):
+                # Transition to ACTION step
+                state = self.flow_data[message_id]
+                state["current_rel_category"] = final_name 
+                state["status"] = "WAITING_ACTION"
+                self.flow_data[message_id] = state
+                
+                keyboard = [
+                    [
+                        InlineKeyboardButton("🟢 Ahorrar/Ingresar", callback_data="ACTION|AHORRO"),
+                        InlineKeyboardButton("🔴 Gastar/Pagar", callback_data="ACTION|GASTO"),
+                    ]
+                ]
+                await query.edit_message_text(
+                    text=f"📂 *{subcategory}*\n¿Es un Ingreso (Ahorro) o una Salida (Gasto)?",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+             else:
+                # Normal Category -> Default to "Gasto"
+                self.flow_data[message_id]["current_tx_type"] = "Gasto"
+                await self._finalize_classification_step(update, context, message_id, final_name)
+
+        elif step == "ACTION":
+            # User selected Action (Ahorro vs Gasto)
+            action = value # AHORRO or GASTO
+            
+            # Update state
+            state = self.flow_data[message_id]
+            state["current_tx_type"] = "Gasto" if action == "GASTO" else "Ahorro"
+            final_name = state.get("current_rel_category")
+            
+            self.flow_data[message_id] = state
+            
+            # Finalize
+            await self._finalize_classification_step(update, context, message_id, final_name)
 
         elif step == "CONFIRM":
             action = value
@@ -381,9 +427,10 @@ class TransactionsBot:
     async def _trigger_confirmation(self, update, context, message_id, query):
         """Shows summary and asks for confirmation."""
         splits = self.flow_data[message_id]["splits"]
+        print(f"DEBUG: splits content -> {splits}")
         msg = "📝 *Resumen de la Transacción*\n\n"
-        for cat, scope, amt in splits:
-            msg += f"• {cat} ({scope}): ${amt:,.2f}\n"
+        for cat, scope, amt, user, tx_type in splits:
+            msg += f"• {cat} ({scope}) [{tx_type}]: ${amt:,.2f}\n"
         
         msg += "\n¿Es correcto?"
         
@@ -409,11 +456,64 @@ class TransactionsBot:
         await self.application.stop()
         await self.application.shutdown()
 
-    async def ask_user_for_category(self, transaction: Dict) -> List[Tuple[str, str, float]]:
+    async def _finalize_classification_step(self, update, context, message_id, category_name):
+        """Logic to split or finish classification."""
+        scope = self.flow_data[message_id]["scope"]
+        state = self.flow_data[message_id]
+        
+        # Capture User Name
+        user_name = update.effective_user.first_name or "User"
+        
+        # Capture Type (default to Gasto if missing)
+        tx_type = state.get("current_tx_type", "Gasto")
+        
+        if state.get("is_multiple"):
+            amount = state.get("current_split_amount", 0)
+            
+            # Add split with User and Type
+            state["splits"].append((category_name, scope, amount, user_name, tx_type))
+            
+            # Recalculate remaining
+            total = state["total_amount"]
+            current_assigned = sum(s[2] for s in state["splits"])
+            remaining = total - current_assigned
+            state["remaining_amount"] = remaining
+            
+            query = update.callback_query
+            
+            if remaining > 1.0: # Tolerance
+                    state["status"] = "WAITING_AMOUNT"
+                    self.flow_data[message_id] = state
+                    await query.edit_message_text(
+                    text=f"✅ Asignado: ${amount:,.2f} a {category_name}\nRestante: ${remaining:,.2f}\n\n🔢 *RESPONDE* con el siguiente valor."
+                )
+            elif remaining < -1.0: 
+                    # Remove last and retry
+                    state["splits"].pop()
+                    state["remaining_amount"] = total - sum(s[2] for s in state["splits"])
+                    state["status"] = "WAITING_AMOUNT"
+                    self.flow_data[message_id] = state
+                    
+                    await query.edit_message_text(
+                    text=f"⚠️ Error: Asignaste ${current_assigned:,.2f}, que supera el total.\nIntenta de nuevo el último monto."
+                    )
+            else:
+                # Done
+                state["splits"][-1] = (category_name, scope, amount + remaining, user_name, tx_type)
+                await self._trigger_confirmation(update, context, message_id, query)
+        
+        else:
+            # Single
+            total = state["total_amount"]
+            state["splits"] = [(category_name, scope, total, user_name, tx_type)]
+            await self._trigger_confirmation(update, context, message_id, update.callback_query)
+
+    async def ask_user_for_category(self, transaction: Dict) -> List[Tuple[str, str, float, str, str]]:
         """
         Initiates the classification flow.
-        Returns: List of (Category, Scope, Amount)
+        Returns: List of (Category, Scope, Amount, User, Type)
         """
+        # ... existing implementation ...
         if not self.chat_id:
             env_chat_id = os.getenv("TELEGRAM_CHAT_ID")
             if env_chat_id:

@@ -43,8 +43,8 @@ async def debug_bot():
     # 5. Output Result
     print(f"\n✅ RESULT RECEIVED!")
     print(f"📂 Splits: {splits}")
-    for i, (cat, scope, amt) in enumerate(splits, 1):
-        print(f"   {i}. {cat} ({scope}): ${amt}")
+    for i, (cat, scope, amt, user, tx_type) in enumerate(splits, 1):
+        print(f"   {i}. {cat} ({scope}) [{tx_type}] ({user}): ${amt}")
     
     print("\n🛑 Stopping Bot...")
     await bot.stop()

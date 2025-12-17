@@ -26,7 +26,7 @@ class SheetsLoader:
              # We can't do much if no auth provided
              pass
 
-    def append_transaction(self, transaction: Dict, category: str, scope: str = "Personal", user_who_paid: str = "User"):
+    def append_transaction(self, transaction: Dict, category: str, scope: str = "Personal", user_who_paid: str = "User", transaction_type: str = "Gasto"):
         """Appends a row to the sheet."""
         if not self.client:
              print("No gspread client. Skipping load.")
@@ -36,14 +36,49 @@ class SheetsLoader:
             if not self.sheet:
                  self.sheet = self.client.open_by_key(self.sheet_id).sheet1 # Default to first sheet
 
-            # Row format: Date, Merchant, Scope, Category, Amount, User_Who_Paid
+            # Parse Category/Subcategory
+            # Format expected: "MainCategory - Subcategory" or just "MainCategory"
+            main_category = category
+            subcategory = ""
+            
+            if " - " in category:
+                parts = category.split(" - ", 1)
+                main_category = parts[0]
+                subcategory = parts[1]
+
+            # Timestamp: We use the captured date as both 'Date' (YYYY-MM-DD or similar) and 'Timestamp' 
+            # Or we can generate a real insertion timestamp?
+            # User requested: [Fecha, Timestamp, Usuario, Scope, Categoría Principal, Subcategoría, Monto, Descripción]
+            # Let's assume 'date' from transaction is the main Date. 
+            # 'Timestamp' usually means precise insertion time or extraction time. 
+            # I will use current time for Timestamp, and transaction date for Date.
+            
+            from datetime import datetime
+            current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            tx_date = transaction.get("date")
+            description = transaction.get("merchant") # Maps to Description/Merchant
+            
+            # Row Schema: 
+            # 1. Fecha (Transaction Date)
+            # 2. Timestamp (Insertion Time)
+            # 3. Usuario (user_who_paid)
+            # 4. Scope
+            # 5. Tipo Movimiento (Transaction Type)
+            # 6. Categoría Principal
+            # 7. Subcategoría
+            # 8. Monto
+            # 9. Descripción
+            
             row = [
-                transaction.get("date"),
-                transaction.get("merchant"),
+                tx_date,
+                current_timestamp,
+                user_who_paid,
                 scope,
-                category,
+                transaction_type,
+                main_category,
+                subcategory,
                 transaction.get("amount"),
-                user_who_paid
+                description
             ]
             
             self.sheet.append_row(row)

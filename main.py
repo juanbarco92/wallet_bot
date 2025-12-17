@@ -56,13 +56,13 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                     logger.info(f"User confirmed splits: {splits}")
 
                     # 4. Load
-                    for category, scope, split_amount in splits:
+                    for category, scope, split_amount, user_who_paid, tx_type in splits:
                          # Create a copy or modify amount
                          # We should probably clone the transaction dict to avoid side effects if we reused it
                          t_copy = transaction.copy()
                          t_copy['amount'] = split_amount
                          
-                         loader.append_transaction(t_copy, category, scope=scope)
+                         loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
                     
                     # 5. Mark as read
                     gmail.mark_as_read(email_data['id'])
