@@ -16,20 +16,11 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-async def etl_loop(bot: TransactionsBot):
+async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader):
     """
     Main ETL loop.
     """
     try:
-        # Initialize components
-        # Note: GmailClient and SheetsLoader might require valid credentials to pass __init__
-        # In a real run, these files must exist.
-        gmail = GmailClient() 
-        parser = TransactionParser()
-        classifier = Classifier()
-        # Initialize loader with same credentials
-        loader = SheetsLoader(credentials=gmail.creds)
-
         sender_filter = os.getenv("AUTHORIZED_SENDER_EMAIL")
 
         while True:
@@ -49,24 +40,29 @@ async def etl_loop(bot: TransactionsBot):
                         logger.warning(f"Could not parse transaction from email {email_data['id']}")
                         continue
 
-                    # 2. Classify
-                    category = "Unknown"
-                    scope = "Personal" # Default
-
+                    # 2. Classify (Initial guess can be kept or removed, bot flow overrides it)
+                    # We rely on bot to give final scope/category/amount
+                    
                     # 3. Human-in-the-Loop
-                    if is_ambiguous or category == "NEEDS_REVIEW":
-                        logger.info(f"Ambiguous transaction found: {transaction}. Asking user...")
-                        # Now returns a tuple (Category, Scope)
-                        category, scope = await bot.ask_user_for_category(transaction)
-                        logger.info(f"User selected: Category={category}, Scope={scope}")
-                        
-                        if category == "Ignore" or category == "Skipped":
-                            logger.info("Transaction skipped by user.")
-                            gmail.mark_as_read(email_data['id'])
-                            continue
+                    # Now returns a list of tuples (Category, Scope, Amount)
+                    logger.info(f"Asking user about transaction: {transaction}")
+                    splits = await bot.ask_user_for_category(transaction)
+                    
+                    if not splits:
+                        logger.info("Transaction ignored or skipped by user.")
+                        gmail.mark_as_read(email_data['id'])
+                        continue
+
+                    logger.info(f"User confirmed splits: {splits}")
 
                     # 4. Load
-                    loader.append_transaction(transaction, category, scope=scope)
+                    for category, scope, split_amount in splits:
+                         # Create a copy or modify amount
+                         # We should probably clone the transaction dict to avoid side effects if we reused it
+                         t_copy = transaction.copy()
+                         t_copy['amount'] = split_amount
+                         
+                         loader.append_transaction(t_copy, category, scope=scope)
                     
                     # 5. Mark as read
                     gmail.mark_as_read(email_data['id'])
@@ -81,29 +77,22 @@ async def etl_loop(bot: TransactionsBot):
         logger.critical(f"Critical error initializing ETL components: {e}")
 
 async def main():
-    # Initialize Bot
-    bot = TransactionsBot()
+    # Initialize Core Components First
+    gmail = GmailClient() 
+    parser = TransactionParser()
+    classifier = Classifier() # Not used currently but kept for future
+    loader = SheetsLoader(credentials=gmail.creds)
+
+    # Initialize Bot with Loader (for manual txs)
+    bot = TransactionsBot(loader=loader)
     
     # Start Bot Polling in background
-    # We use create_task to run the bot's internal loop if it exposes one, 
-    # but python-telegram-bot's application.run_polling() is usually blocking.
-    # However, we can use initialize/start/updater.start_polling as we did in bot.py
-    
     await bot.start_polling()
-    
-    # Run ETL Loop
-    # We run them concurrently.
-    # Since start_polling (my implementation) awaits the startup but returns (it starts background tasks), 
-    # we can just run etl_loop.
-    # Wait, updater.start_polling() is non-blocking? 
-    # The docs say: "starts the polling loop... returns the coroutine..."
-    # Actually, in v20+, start_polling() starts the background task.
-    # We just need to keep the main loop alive.
     
     logger.info("Bot started. Starting ETL loop...")
     
     # Run ETL loop
-    await etl_loop(bot)
+    await etl_loop(bot, gmail, parser, loader)
     
     # If etl_loop crashes, we should probably stop the bot
     await bot.stop()

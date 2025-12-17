@@ -26,7 +26,7 @@ async def debug_bot():
     # 3. Create Mock Transaction
     mock_transaction = {
         'date': datetime.now().strftime("%d/%m/%Y %H:%M"),
-        'amount': 99.900,
+        'amount': 150000,
         'merchant': 'TEST_DEBUG_STORE',
         'description': 'TEST_DEBUG_STORE',
         'original_text': 'Simulated email content for debugging'
@@ -38,11 +38,13 @@ async def debug_bot():
     
     # 4. Wait for User Input
     # This will block until the user clicks a button in Telegram
-    category = await bot.ask_user_for_category(mock_transaction)
+    splits = await bot.ask_user_for_category(mock_transaction)
     
     # 5. Output Result
     print(f"\n✅ RESULT RECEIVED!")
-    print(f"📂 User selected category: {category}")
+    print(f"📂 Splits: {splits}")
+    for i, (cat, scope, amt) in enumerate(splits, 1):
+        print(f"   {i}. {cat} ({scope}): ${amt}")
     
     print("\n🛑 Stopping Bot...")
     await bot.stop()
