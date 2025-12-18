@@ -34,7 +34,15 @@ class SheetsLoader:
 
         try:
             if not self.sheet:
-                 self.sheet = self.client.open_by_key(self.sheet_id).sheet1 # Default to first sheet
+                sh = self.client.open_by_key(self.sheet_id)
+                try:
+                    self.sheet = sh.worksheet("Base_Transacciones")
+                except gspread.WorksheetNotFound:
+                    print("Sheet 'Base_Transacciones' not found. Creating it...")
+                    # Create with enough rows/cols or default
+                    self.sheet = sh.add_worksheet(title="Base_Transacciones", rows=1000, cols=20)
+                    # Optional: Add headers if new? 
+                    # For now, just create.
 
             # Parse Category/Subcategory
             # Format expected: "MainCategory - Subcategory" or just "MainCategory"

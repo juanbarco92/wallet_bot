@@ -403,7 +403,7 @@ class TransactionsBot:
                 for cat, sc, amt in splits:
                     msg += f"• {cat}: ${amt:,.2f}\n"
                 
-                await query.edit_message_text(text=msg, parse_mode='Markdown')
+                await query.edit_message_text(text=msg, parse_mode='Markdown', reply_markup=None)
                 
                 if message_id in self.flow_data:
                     del self.flow_data[message_id]

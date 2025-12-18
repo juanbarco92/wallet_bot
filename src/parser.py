@@ -6,7 +6,8 @@ class TransactionParser:
     def __init__(self):
         # Regex patterns
         # 1. Amount: "$ 17.600,00" or "$17.600,00"
-        self.amount_pattern = r"\$\s?([\d\.]+,\d{2})"
+        # 1. Amount: "$ 17.600,00", "$17.600,00", "COP17.900,00"
+        self.amount_pattern = r"(?:\$|COP)\s?([\d\.]+,\d{2})"
         
         # 2. Merchant Patterns
         # Format A: "en MERCHANT con" (Purchases)
