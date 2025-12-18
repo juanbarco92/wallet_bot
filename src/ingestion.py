@@ -47,9 +47,9 @@ class GmailClient:
 
         self.service = build('gmail', 'v1', credentials=self.creds)
 
-    def fetch_unread_emails(self, sender: Optional[str] = None, max_results: int = 1) -> List[Dict]:
+    def fetch_unread_emails(self, sender: Optional[str] = None, max_results: int = 1, custom_query: str = None) -> List[Dict]:
         """Fetches unread emails. Defaults to just 1 (the latest)."""
-        query = 'is:unread newer_than:1d'
+        query = custom_query if custom_query else 'is:unread newer_than:1d'
         if sender:
             query += f' from:{sender}'
         

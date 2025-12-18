@@ -1,9 +1,23 @@
 import re
 from typing import Dict, Optional, Tuple
 from datetime import datetime
+import os
+import json
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class TransactionParser:
-    def __init__(self):
+    def __init__(self, api_key: Optional[str] = None):
+        # Configure Gemini
+        key = api_key or os.getenv("GEMINI_API_KEY")
+        if key:
+            genai.configure(api_key=key)
+            self.model = genai.GenerativeModel("gemini-flash-latest")
+        else:
+            self.model = None
+
         # Regex patterns
         # 1. Amount: "$ 17.600,00" or "$17.600,00"
         # 1. Amount: "$ 17.600,00", "$17.600,00", "COP17.900,00"
@@ -17,7 +31,9 @@ class TransactionParser:
         self.merchant_patterns = [
             r"\ben\s+(.*?)\s+(?:con|si tienes dudas)",
             r"\ba\s+(.*?)\s+el\s+\d{2}/\d{2}",
-            r"a la cuenta\s+(\*?\d+)",
+            r"a la llave\s+(@?[\w\d]+)", # Covers QR and Transfers to Key
+            r"Retiraste\s+[\d\.,\s\$]+en\s+(.*?)\s+de tu", # Withdrawals
+            r"\ben\s+(.*?)(?:,|\s+el)\s+\d{2}/\d{2}", # Generic 'en X, el'
         ]
         
         # 3. Date Patterns
@@ -27,39 +43,79 @@ class TransactionParser:
 
     def parse(self, text: str) -> Dict:
         """Parses the email body/snippet to extract transaction details."""
+        # 0. Try Regex First (Fast & Free)
+        regex_result = self._parse_regex(text)
+        
+        # Validation: If regex got a valid amount and merchant, return it
+        if regex_result['amount'] > 0 and regex_result['merchant'] != "UNKNOWN":
+            return regex_result
+            
+        if self.model:
+            print("Regex failed to fully parse. Attempting fallback to Gemini...")
+            try:
+                llm_result = self._parse_with_llm(text)
+                if llm_result:
+                    print(f"LLM Success: {llm_result}")
+                    # Merge: use LLM values but keep original text
+                    llm_result['original_text'] = text
+                    return llm_result
+            except Exception as e:
+                print(f"LLM Fallback failed with exception: {e}")
+        
+        return regex_result
+
+    def _parse_regex(self, text: str) -> Dict:
+        """Original Regex Logic"""
         
         # 1. Extract Amount
         amount_match = re.search(self.amount_pattern, text)
         amount = 0.0
         if amount_match:
-            # Clean string: "1.623.500,00" -> 1623500.00
-            # Strategy: Remove non-numeric chars except the LAST separator if meaningful
-            raw_amount = amount_match.group(1).strip()
+            # Normalize amount string
+            raw = amount_match.group(1).strip()
+            # Remove currency symbols or stray chars if any remain (regex handles most)
+            raw = re.sub(r'[^\d,\.]', '', raw)
+
+            # Heuristic: Detect separator
+            # Case 1: Both . and , exist (e.g. "18,400.00" or "1.200,50")
+            if '.' in raw and ',' in raw:
+                last_dot = raw.rfind('.')
+                last_comma = raw.rfind(',')
+                if last_dot > last_comma:
+                    # US Format: 18,400.00 -> Remove commas
+                    clean = raw.replace(',', '')
+                else:
+                    # EU/Col Format: 1.200,50 -> Remove dots, swap comma
+                    clean = raw.replace('.', '').replace(',', '.')
             
-            # Remove symbols if captured inadvertently
-            raw_amount = re.sub(r'[^\d,\.]', '', raw_amount)
-            
-            # Determine separator (comma or dot)
-            # If both exist, the one that appears last is likely decimal
-            # If only one exists:
-            #   - if it appears multiple times (1.000.000), it's thousands -> remove
-            #   - if appears once, check context (3 digits after?). Ambiguous. 
-            #   Col/EU standard: dot=thousands, comma=decimals (1.234,56)
-            #   US standard: comma=thousands, dot=decimals (1,234.56)
-            
-            # Simple heuristic for this user's context (Bancolombia)
-            # Usually uses 1.234,56 or 1,234 for pure ints?
-            # User example: 1,623,500 (no decimal?) or 1.623.500? User wrote "1,623,500"
-            pass_1 = raw_amount.replace('.', '').replace(',', '.') # Assume dot=thousand, comma=decimal
+            # Case 2: Only one separator exists (e.g. "17.900" or "17,900" or "5000")
+            elif '.' in raw:
+                # Ambiguous: 17.900 (17k) vs 17.90 (17.9). 
+                # Bancolombia usually sends 2 decimals for cents if it is a decimal.
+                # If 3 digits follow, it's likely thousands. 
+                # If 2 digits, it works as decimal or thousands (usually decimal in US, thousands in Col).
+                # Assumption: If string ends with .XX, treat as decimal? 
+                # Actually, "17.900" is almost always 17k in this context. 
+                # But "18.400.00" (handled above).
+                # Let's clean . if it looks like thousands
+                if len(raw.split('.')[-1]) == 3:
+                     clean = raw.replace('.', '')
+                else:
+                     clean = raw # preserve decimal? Risk.
+                     # 17.900 -> 17900. 17.00 -> 17.00
+            elif ',' in raw:
+                # "17,900" -> 17900 or 17.9?
+                if len(raw.split(',')[-1]) == 3:
+                    clean = raw.replace(',', '')
+                else:
+                    clean = raw.replace(',', '.')
+            else:
+                clean = raw
+
             try:
-                amount = float(pass_1)
+                amount = float(clean)
             except:
-                # Retry assuming comma=thousand, dot=decimal
-                pass_2 = raw_amount.replace(',', '')
-                try:
-                    amount = float(pass_2)
-                except:
-                    pass
+                pass
 
         # 2. Extract Merchant (Try patterns)
         merchant = "UNKNOWN"
@@ -87,6 +143,37 @@ class TransactionParser:
             "description": merchant,
             "original_text": text
         }
+
+    def _parse_with_llm(self, text: str) -> Optional[Dict]:
+        """Uses Gemini to extract structured data."""
+        prompt = f"""
+        Extract transaction details from this email text into JSON format.
+        Fields: 
+        - amount (number, no strings)
+        - merchant (string, NAME ONLY, no "Compra en")
+        - date (string, format DD/MM/YYYY HH:MM)
+        
+        Text: '{text}'
+        
+        Return ONLY valid JSON.
+        """
+        try:
+            # print("Calling Gemini generate_content...")
+            response = self.model.generate_content(prompt)
+            
+            # Clean response (remove markdown ```json ... ```)
+            raw_json = response.text.replace("```json", "").replace("```", "").strip()
+            data = json.loads(raw_json)
+            
+            return {
+                "date": data.get("date", datetime.now().strftime("%d/%m/%Y %H:%M")),
+                "amount": float(data.get("amount", 0.0)),
+                "merchant": str(data.get("merchant", "UNKNOWN")).upper(),
+                "description": str(data.get("merchant", "UNKNOWN")).upper(),
+            }
+        except Exception as e:
+            print(f"Error inside _parse_with_llm: {e}")
+            return None
 
 class Classifier:
     def __init__(self):
