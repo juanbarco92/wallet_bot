@@ -400,7 +400,7 @@ class TransactionsBot:
                 
                 # Success Msg
                 msg = "✅ *Registro Exitoso*\n"
-                for cat, sc, amt in splits:
+                for cat, scope, amt, _, _ in splits:
                     msg += f"• {cat}: ${amt:,.2f}\n"
                 
                 await query.edit_message_text(text=msg, parse_mode='Markdown', reply_markup=None)
