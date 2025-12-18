@@ -7,14 +7,17 @@ class TransactionParser:
         # Regex patterns
         # 1. Amount: "$ 17.600,00" or "$17.600,00"
         # 1. Amount: "$ 17.600,00", "$17.600,00", "COP17.900,00"
-        self.amount_pattern = r"(?:\$|COP)\s?([\d\.]+,\d{2})"
+        # 1. Amount: "$ 17.600,00", "COP17.900,00", "$1,623,500", "$ 5000"
+        # Flexible match for numbers with dots/commas
+        self.amount_pattern = r"(?:\$|COP)\s?([\d\.,]+)"
         
         # 2. Merchant Patterns
         # Format A: "en MERCHANT con" (Purchases)
         # Format B: "a MERCHANT el" (Transfers)
         self.merchant_patterns = [
             r"\ben\s+(.*?)\s+(?:con|si tienes dudas)",
-            r"\ba\s+(.*?)\s+el\s+\d{2}/\d{2}"
+            r"\ba\s+(.*?)\s+el\s+\d{2}/\d{2}",
+            r"a la cuenta\s+(\*?\d+)",
         ]
         
         # 3. Date Patterns
@@ -29,12 +32,34 @@ class TransactionParser:
         amount_match = re.search(self.amount_pattern, text)
         amount = 0.0
         if amount_match:
-            # Convert "17.600,00" -> 17600.00
-            clean_amount = amount_match.group(1).replace('.', '').replace(',', '.')
+            # Clean string: "1.623.500,00" -> 1623500.00
+            # Strategy: Remove non-numeric chars except the LAST separator if meaningful
+            raw_amount = amount_match.group(1).strip()
+            
+            # Remove symbols if captured inadvertently
+            raw_amount = re.sub(r'[^\d,\.]', '', raw_amount)
+            
+            # Determine separator (comma or dot)
+            # If both exist, the one that appears last is likely decimal
+            # If only one exists:
+            #   - if it appears multiple times (1.000.000), it's thousands -> remove
+            #   - if appears once, check context (3 digits after?). Ambiguous. 
+            #   Col/EU standard: dot=thousands, comma=decimals (1.234,56)
+            #   US standard: comma=thousands, dot=decimals (1,234.56)
+            
+            # Simple heuristic for this user's context (Bancolombia)
+            # Usually uses 1.234,56 or 1,234 for pure ints?
+            # User example: 1,623,500 (no decimal?) or 1.623.500? User wrote "1,623,500"
+            pass_1 = raw_amount.replace('.', '').replace(',', '.') # Assume dot=thousand, comma=decimal
             try:
-                amount = float(clean_amount)
+                amount = float(pass_1)
             except:
-                pass
+                # Retry assuming comma=thousand, dot=decimal
+                pass_2 = raw_amount.replace(',', '')
+                try:
+                    amount = float(pass_2)
+                except:
+                    pass
 
         # 2. Extract Merchant (Try patterns)
         merchant = "UNKNOWN"

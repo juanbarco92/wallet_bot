@@ -292,8 +292,8 @@ class TransactionsBot:
             # Step 2.5: Multiple?
             keyboard = [
                 [
-                    InlineKeyboardButton("✅ Sí, dividir", callback_data="MULTIPLE|Yes"),
-                    InlineKeyboardButton("❌ No, una sola", callback_data="MULTIPLE|No"),
+                    InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
+                    InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
                 ]
             ]
             await query.edit_message_text(

@@ -49,7 +49,7 @@ class GmailClient:
 
     def fetch_unread_emails(self, sender: Optional[str] = None, max_results: int = 1) -> List[Dict]:
         """Fetches unread emails. Defaults to just 1 (the latest)."""
-        query = 'is:unread'
+        query = 'is:unread newer_than:1d'
         if sender:
             query += f' from:{sender}'
         
