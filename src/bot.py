@@ -18,6 +18,13 @@ logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 
+def escape_md(text):
+    """Escapes special characters for Markdown V1."""
+    if not text:
+        return ""
+    # In Markdown V1, we mainly need to escape *, _, `, [
+    return str(text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+
 class TransactionsBot:
     def __init__(self, loader=None):
         self.application = ApplicationBuilder().token(TOKEN).build()
@@ -365,7 +372,7 @@ class TransactionsBot:
                     ]
                 ]
                 await query.edit_message_text(
-                    text=f"📂 *{subcategory}*\n¿Es un Ingreso (Ahorro) o una Salida (Gasto)?",
+                    text=f"📂 *{escape_md(subcategory)}*\n¿Es un Ingreso (Ahorro) o una Salida (Gasto)?",
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode='Markdown'
                 )
@@ -401,7 +408,7 @@ class TransactionsBot:
                 # Success Msg
                 msg = "✅ *Registro Exitoso*\n"
                 for cat, scope, amt, _, _ in splits:
-                    msg += f"• {cat}: ${amt:,.2f}\n"
+                    msg += f"• {escape_md(cat)}: ${amt:,.2f}\n"
                 
                 await query.edit_message_text(text=msg, parse_mode='Markdown', reply_markup=None)
                 
@@ -430,7 +437,7 @@ class TransactionsBot:
         print(f"DEBUG: splits content -> {splits}")
         msg = "📝 *Resumen de la Transacción*\n\n"
         for cat, scope, amt, user, tx_type in splits:
-            msg += f"• {cat} ({scope}) [{tx_type}]: ${amt:,.2f}\n"
+            msg += f"• {escape_md(cat)} ({escape_md(scope)}) [{escape_md(tx_type)}]: ${amt:,.2f}\n"
         
         msg += "\n¿Es correcto?"
         
@@ -485,7 +492,7 @@ class TransactionsBot:
                     state["status"] = "WAITING_AMOUNT"
                     self.flow_data[message_id] = state
                     await query.edit_message_text(
-                    text=f"✅ Asignado: ${amount:,.2f} a {category_name}\nRestante: ${remaining:,.2f}\n\n🔢 *RESPONDE* con el siguiente valor."
+                    text=f"✅ Asignado: ${amount:,.2f} a {escape_md(category_name)}\nRestante: ${remaining:,.2f}\n\n🔢 *RESPONDE* con el siguiente valor."
                 )
             elif remaining < -1.0: 
                     # Remove last and retry
@@ -539,9 +546,9 @@ class TransactionsBot:
 
         text = (
             f"💰 *Nueva Transacción Detectada*\n"
-            f"🛒 {transaction.get('merchant')}\n"
+            f"🛒 {escape_md(transaction.get('merchant'))}\n"
             f"💵 ${total:,.2f}\n"
-            f"📅 {transaction.get('date')}\n\n"
+            f"📅 {escape_md(transaction.get('date'))}\n\n"
             f"¿Deseas registrarla?"
         )
 
