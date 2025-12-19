@@ -51,7 +51,14 @@ class GmailClient:
         """Fetches unread emails. Defaults to just 1 (the latest)."""
         query = custom_query if custom_query else 'is:unread newer_than:1d'
         if sender:
-            query += f' from:{sender}'
+            # Handle comma-separated senders robustly
+            senders = [s.strip() for s in sender.split(',') if s.strip()]
+            if len(senders) > 1:
+                # from:(email1 OR email2)
+                or_query = " OR ".join(senders)
+                query += f' from:({or_query})'
+            else:
+                query += f' from:{senders[0]}'
         
         print(f"Fetching latest {max_results} emails with query: {query}")
         results = self.service.users().messages().list(userId='me', q=query, maxResults=max_results).execute()
