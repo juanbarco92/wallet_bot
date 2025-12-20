@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import json
 import google.generativeai as genai
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,6 +30,7 @@ class TransactionParser:
         # Format A: "en MERCHANT con" (Purchases)
         # Format B: "a MERCHANT el" (Transfers)
         self.merchant_patterns = [
+            r"Comercio\n\s*(.*?)\n", # RappiCard
             r"\ben\s+(.*?)\s+(?:con|si tienes dudas)",
             r"\ba\s+(.*?)\s+el\s+\d{2}/\d{2}",
             r"a la llave\s+(@?[\w\d]+)", # Covers QR and Transfers to Key
@@ -39,11 +41,20 @@ class TransactionParser:
         # 3. Date Patterns
         # Format A: "11/12/2025 a las 15:51"
         # Format B: "12/12/2025 10:00"
-        self.date_pattern = r"(\d{2}/\d{2}/\d{4})(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2})"
+        # Format C: "2025-12-17 15:22:22" (Rappi)
+        self.date_pattern = r"(?:(\d{2}/\d{2}/\d{4})(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2}))|(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
 
     def parse(self, text: str) -> Dict:
         """Parses the email body/snippet to extract transaction details."""
-        # 0. Try Regex First (Fast & Free)
+        # 0. Clean HTML if present
+        if text and ("<html" in text.lower() or "<div" in text.lower() or "body {" in text.lower()):
+            try:
+                soup = BeautifulSoup(text, "html.parser")
+                text = soup.get_text(separator="\n")
+            except Exception as e:
+                print(f"HTML cleaning failed: {e}")
+
+        # 1. Try Regex First (Fast & Free)
         regex_result = self._parse_regex(text)
         
         # Validation: If regex got a valid amount and merchant, return it
@@ -129,9 +140,17 @@ class TransactionParser:
         date_match = re.search(self.date_pattern, text)
         date_str = ""
         if date_match:
-            date_part = date_match.group(1)
-            time_part = date_match.group(2)
-            date_str = f"{date_part} {time_part}"
+
+            if date_match.group(1):
+                # Format A (DD/MM/YYYY HH:MM)
+                date_part = date_match.group(1)
+                time_part = date_match.group(2)
+                date_str = f"{date_part} {time_part}"
+            elif date_match.group(3):
+                # Format C (YYYY-MM-DD HH:MM:SS) - Rappi
+                # normalize to DD/MM/YYYY HH:MM
+                dt_obj = datetime.strptime(date_match.group(3), "%Y-%m-%d %H:%M:%S")
+                date_str = dt_obj.strftime("%d/%m/%Y %H:%M")
         else:
             # Fallback to now if not found
             date_str = datetime.now().strftime("%d/%m/%Y %H:%M")

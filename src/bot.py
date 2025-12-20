@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TOKEN = os.getenv("TELEGRAM_TOKEN")
+TOKEN = os.getenv("TELEGRAM_TOKEN_JUANMA")
 
 def escape_md(text):
     """Escapes special characters for Markdown V1."""
@@ -26,8 +26,9 @@ def escape_md(text):
     return str(text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
 
 class TransactionsBot:
-    def __init__(self, loader=None):
-        self.application = ApplicationBuilder().token(TOKEN).build()
+    def __init__(self, loader=None, token=None):
+        self.token = token or TOKEN
+        self.application = ApplicationBuilder().token(self.token).build()
         self.pending_futures: Dict[str, asyncio.Future] = {}
         self.flow_data: Dict[str, Dict] = {} # Key: message_id, Value: State Dict
         self.manual_sessions: Dict[int, Dict] = {} # Key: user_id, Value: Manual State
@@ -522,7 +523,7 @@ class TransactionsBot:
         """
         # ... existing implementation ...
         if not self.chat_id:
-            env_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+            env_chat_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
             if env_chat_id:
                 self.chat_id = int(env_chat_id)
             else:

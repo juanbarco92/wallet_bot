@@ -9,13 +9,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 async def verify_telegram():
     load_dotenv()
-    token = os.getenv("TELEGRAM_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    token = os.getenv("TELEGRAM_TOKEN_JUANMA")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
 
     print("--- Verifying Telegram Bot ---")
 
     if not token:
-        print("❌ Error: TELEGRAM_TOKEN missing in .env")
+        print("❌ Error: TELEGRAM_TOKEN_JUANMA missing in .env")
         return
 
     try:
@@ -24,12 +24,12 @@ async def verify_telegram():
         print(f"✅ Bot Authentication Successful! Bot Name: @{bot_info.username}")
         
         if not chat_id:
-            print("⚠️ Warning: TELEGRAM_CHAT_ID missing in .env")
+            print("⚠️ Warning: TELEGRAM_CHAT_ID_JUANMA missing in .env")
             print("   To get your Chat ID:")
             print(f"   1. Send /start to @{bot_info.username} on Telegram.")
             print("   2. Run the main bot script (`poetry run python main.py`).")
             print("   3. Check the logs/console output for your Chat ID.")
-            print("   4. Add it to .env: TELEGRAM_CHAT_ID=your_id")
+            print("   4. Add it to .env: TELEGRAM_CHAT_ID_JUANMA=your_id")
         else:
             print(f"   Attempting to send test message to Chat ID: {chat_id}")
             try:

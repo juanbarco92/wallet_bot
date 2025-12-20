@@ -16,10 +16,15 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive'
 ]
 
+class TokenExpiredError(Exception):
+    """Raised when the OAuth token is invalid/expired and cannot be refreshed automatically."""
+    pass
+
 class GmailClient:
-    def __init__(self, credentials_path: str = 'credentials.json', token_path: str = 'token.json'):
+    def __init__(self, credentials_path: str = 'credentials.json', token_path: str = 'token.json', interactive: bool = False):
         self.credentials_path = credentials_path
         self.token_path = token_path
+        self.interactive = interactive
         self.creds = None
         self.service = None
         self._authenticate()
@@ -29,21 +34,39 @@ class GmailClient:
         Lists the user's Gmail labels.
         """
         if os.path.exists(self.token_path):
-            self.creds = Credentials.from_authorized_user_file(self.token_path, SCOPES)
+            try:
+                self.creds = Credentials.from_authorized_user_file(self.token_path, SCOPES)
+            except Exception as e:
+                print(f"Error loading token.json: {e}")
+                self.creds = None
+
         # If there are no (valid) credentials available, let the user log in.
         if not self.creds or not self.creds.valid:
+            refreshed = False
             if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                if not os.path.exists(self.credentials_path):
-                     raise FileNotFoundError(f"Credentials file not found at {self.credentials_path}. Please download it from Google Cloud Console.")
-                
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    self.credentials_path, SCOPES)
-                self.creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open(self.token_path, 'w') as token:
-                token.write(self.creds.to_json())
+                try:
+                    self.creds.refresh(Request())
+                    refreshed = True
+                except Exception as e:
+                    print(f"Error refreshing token: {e}. Needs re-authentication.")
+            
+            if not refreshed:
+                if self.interactive:
+                    if not os.path.exists(self.credentials_path):
+                         raise FileNotFoundError(f"Credentials file not found at {self.credentials_path}. Please download it from Google Cloud Console.")
+                    
+                    print("Interactive mode: Launching browser for authentication...")
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        self.credentials_path, SCOPES)
+                    self.creds = flow.run_local_server(port=0)
+                else:
+                    # Non-interactive mode: Fail loudly so we can alert
+                    raise TokenExpiredError("Token is expired or invalid, and interactive mode is off. Manual re-authentication required.")
+            
+            # Save the credentials for the next run (if we successfully got them)
+            if self.creds and self.creds.valid:
+                with open(self.token_path, 'w') as token:
+                    token.write(self.creds.to_json())
 
         self.service = build('gmail', 'v1', credentials=self.creds)
 
@@ -128,7 +151,8 @@ class GmailClient:
 if __name__ == '__main__':
     # Test execution
     try:
-        client = GmailClient()
+        # manual run implies interactive
+        client = GmailClient(interactive=True)
         emails = client.fetch_unread_emails()
         # Don't mark as read during test to avoid annoying the user
         # for email in emails:
