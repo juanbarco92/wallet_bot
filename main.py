@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader):
+async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader):
     """
     Main ETL loop.
     """
@@ -66,6 +66,12 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                         if cid_str:
                             target_chat_id = int(cid_str)
                     
+                    # Select the correct bot
+                    current_bot = bots.get(target_user)
+                    if not current_bot:
+                        logger.warning(f"No specific bot found for {target_user}. Falling back to Juanma.")
+                        current_bot = bots.get("Juanma")
+                    
                     # 2. Parse
                     # Prefer body, fallback to snippet
                     text_to_parse = email_data.get('body') or email_data.get('snippet', '')
@@ -82,7 +88,7 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                     # 3. Classify / Human-in-the-Loop
                     # We pass routing info to bot
                     logger.info(f"Asking {target_user} about transaction: {transaction}")
-                    splits = await bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
+                    splits = await current_bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
                     
                     if not splits:
                         logger.info("Transaction ignored or skipped by user.")
@@ -109,6 +115,8 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                 logger.error(f"Error in ETL loop: {e}")
                 # Optional: Send alert for general errors?
                 # await bot.application.bot.send_message(chat_id=bot.chat_id, text=f"⚠️ Generic Error in Loop: {e}")
+                # We can't alert easily if we don't know which bot. Pick Juanma.
+                pass
 
             # Wait before next poll
             await asyncio.sleep(60)
@@ -118,19 +126,30 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
     except Exception as e:
         logger.critical(f"Critical error in ETL loop: {e}")
         # We might want to alert here too if possible
-        if bot.chat_id:
-             await bot.application.bot.send_message(chat_id=bot.chat_id, text=f"🚨 Critical ETL Error: {e}")
+        if bots.get("Juanma") and bots["Juanma"].chat_id:
+             await bots["Juanma"].application.bot.send_message(chat_id=bots["Juanma"].chat_id, text=f"🚨 Critical ETL Error: {e}")
 
 async def main():
-    # Initialize Bot FIRST to ensure we can alert errors
-    # Note: we pass loader=None initially, can update later if needed or just use for alerting
-    bot = TransactionsBot(loader=None)
+    # Initialize Bots
+    token_juanma = os.getenv("TELEGRAM_TOKEN_JUANMA")
+    token_leydi = os.getenv("TELEGRAM_TOKEN_LEY")
     
-    # Start Polling early
-    # This allows the bot to potentially receive commands even if ETL is down, 
-    # though here we just want it ready to send messages.
-    await bot.start_polling()
-    logger.info("Bot started. Initializing services...")
+    bot_juanma = TransactionsBot(token=token_juanma, loader=None)
+    bot_leydi = None
+    
+    # Start Polling
+    await bot_juanma.start_polling()
+    logger.info("Bot Juanma started.")
+
+    bots = {"Juanma": bot_juanma}
+
+    if token_leydi:
+        bot_leydi = TransactionsBot(token=token_leydi, loader=None)
+        await bot_leydi.start_polling()
+        bots["Leydi"] = bot_leydi
+        logger.info("Bot Leydi started.")
+    
+    logger.info("Services initializing...")
 
     try:
         # Initialize Core Components
@@ -140,13 +159,16 @@ async def main():
         classifier = Classifier() 
         loader = SheetsLoader(credentials=gmail.creds)
 
-        # Update bot with loader
-        bot.loader = loader
+        # Update bots with loader
+        bot_juanma.loader = loader
+        if bot_leydi:
+            bot_leydi.loader = loader
         
         logger.info("Services initialized. Starting ETL loop...")
         
         # Run ETL loop
-        await etl_loop(bot, gmail, parser, loader)
+        await etl_loop(bots, gmail, parser, loader)
+
         
     except TokenExpiredError as e:
         msg = (
@@ -158,33 +180,25 @@ async def main():
             "`poetry run python src/ingestion.py`"
         )
         logger.critical(f"Token Expired: {e}")
-        # Try to send to known chat ID
-        if bot.chat_id:
-            await bot.application.bot.send_message(chat_id=bot.chat_id, text=msg, parse_mode='Markdown')
+        # Try to send to known chat ID (Default Juanma)
+        if bot_juanma.chat_id:
+            await bot_juanma.application.bot.send_message(chat_id=bot_juanma.chat_id, text=msg, parse_mode='Markdown')
         else:
             # Fallback to env var if bot hasn't received a /start yet
             fallback_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
             if fallback_id:
-                 await bot.application.bot.send_message(chat_id=fallback_id, text=msg, parse_mode='Markdown')
-        
-        # We exit to avoid zombie process state, or we could wait.
-        # Exit is better so supervisor/systemd knows it failed, 
-        # BUT user wanted "proceso no se danie".
-        # If we exit, the service stops. If we wait loop, we stay up.
-        # Let's wait loop, checking every hour?
-        # No, re-auth needs manual CLI interaction. A wait loop won't help unless user ssh's in.
-        # But if we exit, user has to restart service.
-        # Better: Exit. User instruction says "Run command". That command fixes token. 
-        # Then user restarts bot.
+                 await bot_juanma.application.bot.send_message(chat_id=fallback_id, text=msg, parse_mode='Markdown')
         
     except Exception as e:
         logger.critical(f"Fatal Startup Error: {e}\n{traceback.format_exc()}")
-        if bot.chat_id:
-            await bot.application.bot.send_message(chat_id=bot.chat_id, text=f"🔥 Fatal Startup Error: {e}")
+        if bot_juanma.chat_id:
+            await bot_juanma.application.bot.send_message(chat_id=bot_juanma.chat_id, text=f"🔥 Fatal Startup Error: {e}")
     
     finally:
-        # If execution reaches here, we stop
-        await bot.stop()
+        # Stop all bots
+        await bot_juanma.stop()
+        if bot_leydi:
+            await bot_leydi.stop()
 
 if __name__ == "__main__":
     try:
