@@ -516,20 +516,26 @@ class TransactionsBot:
             state["splits"] = [(category_name, scope, total, user_name, tx_type)]
             await self._trigger_confirmation(update, context, message_id, update.callback_query)
 
-    async def ask_user_for_category(self, transaction: Dict) -> List[Tuple[str, str, float, str, str]]:
+    async def ask_user_for_category(self, transaction: Dict, user_name: str = "User", target_chat_id: int = None) -> List[Tuple[str, str, float, str, str]]:
         """
         Initiates the classification flow.
         Returns: List of (Category, Scope, Amount, User, Type)
         """
-        # ... existing implementation ...
-        if not self.chat_id:
-            env_chat_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
-            if env_chat_id:
-                self.chat_id = int(env_chat_id)
-            else:
-                print("Warning: No Chat ID available.")
-                return []
-
+        # Determine Chat ID
+        chat_id_to_use = target_chat_id
+        
+        if not chat_id_to_use:
+             # Fallback to self.chat_id (from /start) or env
+             if self.chat_id:
+                 chat_id_to_use = self.chat_id
+             else:
+                 env_chat_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
+                 if env_chat_id:
+                     chat_id_to_use = int(env_chat_id)
+                 else:
+                     print("Warning: No Chat ID available.")
+                     return []
+        
         # Step 1: Validate (Yes/No)
         keyboard = [
             [
@@ -546,19 +552,23 @@ class TransactionsBot:
             total = 0.0
 
         text = (
-            f"💰 *Nueva Transacción Detectada*\n"
+            f"💰 *Nueva Transacción Detectada* ({escape_md(user_name)})\n"
             f"🛒 {escape_md(transaction.get('merchant'))}\n"
             f"💵 ${total:,.2f}\n"
             f"📅 {escape_md(transaction.get('date'))}\n\n"
             f"¿Deseas registrarla?"
         )
 
-        message = await self.application.bot.send_message(
-            chat_id=self.chat_id, 
-            text=text, 
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
+        try:
+            message = await self.application.bot.send_message(
+                chat_id=chat_id_to_use, 
+                text=text, 
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.error(f"Failed to send message to {chat_id_to_use}: {e}")
+            return []
 
         loop = asyncio.get_running_loop()
         future = loop.create_future()

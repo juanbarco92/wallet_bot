@@ -2,7 +2,7 @@ import asyncio
 import os
 import logging
 import traceback
-from src.ingestion import GmailClient, TokenExpiredError
+from src.ingestion import GmailClient, TokenExpiredError, detect_original_source
 from src.parser import TransactionParser, Classifier
 from src.bot import TransactionsBot
 from src.loader import SheetsLoader
@@ -26,6 +26,12 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
         # Handle multiple senders (comma separated)
         senders = [s.strip() for s in sender_env.split(",") if s.strip()]
         
+        # Add Wife's Email to monitoring list (implicit or explicit)
+        # We can just append it to the query or the list if not there
+        WIFE_EMAIL = "lejom_0721@hotmail.com"
+        if WIFE_EMAIL not in senders:
+            senders.append(WIFE_EMAIL)
+
         # Construct query: "from:(s1 OR s2) is:unread newer_than:1d"
         if senders:
             sender_query = " OR ".join(senders)
@@ -39,16 +45,6 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                 # Use custom_query to combine sender + unread
                 full_query = f"{base_query} is:unread newer_than:1d" if base_query else "is:unread newer_than:1d"
                 
-                # fetching calls API. If token invalid, google lib might raise. 
-                # Since we wrapped logic in ingestion, ensuring it catches refresh errors?
-                # Actually, fetch_unread_emails calls service.users().messages().list()
-                # If that fails with 401, we need to catch it here or in ingestion.
-                # In ingestion.py I only wrapped _authenticate aka refresh logic.
-                # Standard calls might still fail. 
-                # Ideally ingestion.py should wrap every call, but valid token usually suffices.
-                # If token dies mid-run, ingestion raises standard google/http error.
-                # For now, let's trust _authenticate check.
-                
                 try:
                     emails = gmail.fetch_unread_emails(custom_query=full_query)
                 except Exception as e:
@@ -60,22 +56,33 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                 for email_data in emails:
                     logger.info(f"Processing email {email_data['id']}")
                     
-                    # 1. Parse
+                    # 1. Detect Source & Routing
+                    original_sender, target_user, chat_id_key = detect_original_source(email_data)
+                    logger.info(f"Detected Source: {original_sender} | Target: {target_user} ({chat_id_key})")
+                    
+                    target_chat_id = None
+                    if chat_id_key:
+                        cid_str = os.getenv(chat_id_key)
+                        if cid_str:
+                            target_chat_id = int(cid_str)
+                    
+                    # 2. Parse
                     # Prefer body, fallback to snippet
                     text_to_parse = email_data.get('body') or email_data.get('snippet', '')
                     transaction = parser.parse(text_to_parse)
                     
                     if not transaction['amount'] and not transaction['merchant']:
                         logger.warning(f"Could not parse transaction from email {email_data['id']}")
+                        # Mark as read to avoid loop? Or skip?
+                        # If we can't parse, maybe it's spam or irrelevant.
+                        # For now, let's mark read so we don't get stuck.
+                        gmail.mark_as_read(email_data['id'])
                         continue
 
-                    # 2. Classify (Initial guess can be kept or removed, bot flow overrides it)
-                    # We rely on bot to give final scope/category/amount
-                    
-                    # 3. Human-in-the-Loop
-                    # Now returns a list of tuples (Category, Scope, Amount)
-                    logger.info(f"Asking user about transaction: {transaction}")
-                    splits = await bot.ask_user_for_category(transaction)
+                    # 3. Classify / Human-in-the-Loop
+                    # We pass routing info to bot
+                    logger.info(f"Asking {target_user} about transaction: {transaction}")
+                    splits = await bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
                     
                     if not splits:
                         logger.info("Transaction ignored or skipped by user.")
@@ -87,7 +94,6 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
                     # 4. Load
                     for category, scope, split_amount, user_who_paid, tx_type in splits:
                          # Create a copy or modify amount
-                         # We should probably clone the transaction dict to avoid side effects if we reused it
                          t_copy = transaction.copy()
                          t_copy['amount'] = split_amount
                          
@@ -98,6 +104,7 @@ async def etl_loop(bot: TransactionsBot, gmail: GmailClient, parser: Transaction
             
             except TokenExpiredError as tee:
                 raise tee # Escalate to main handler
+
             except Exception as e:
                 logger.error(f"Error in ETL loop: {e}")
                 # Optional: Send alert for general errors?

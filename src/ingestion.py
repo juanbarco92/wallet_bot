@@ -1,6 +1,6 @@
 import os
 import os.path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -147,6 +147,50 @@ class GmailClient:
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
         print(f"Marked message {message_id} as read.")
+
+def detect_original_source(email_data: Dict) -> Tuple[str, str, str]:
+    """
+    Analyzes the email to detect the original sender and the target user.
+    Returns: (Original Sender, Target User, Target Chat ID Key)
+    
+    Target Chat ID Key is the env var name for the chat ID (e.g., 'TELEGRAM_CHAT_ID_LEY').
+    """
+    headers = email_data.get('payload', {}).get('headers', [])
+    body = email_data.get('body', '')
+    snippet = email_data.get('snippet', '')
+    
+    # helper to get header value
+    def get_header(name):
+        for h in headers:
+            if h['name'].lower() == name.lower():
+                return h['value']
+        return ""
+
+    from_header = get_header('From')
+    
+    # 1. Check if it comes from the Wife
+    # We check if 'lejom_0721@hotmail.com' is in the sender
+    if "lejom_0721@hotmail.com" in from_header.lower():
+        # It's from her. Now determine the Bank.
+        
+        # Priority 1: Check Headers (X-Original-Sender, Reply-To) - simplified check
+        # (Hotmail forwarding might not preserve these perfectly, but worth checking)
+        
+        # Priority 2: Body/Content Content
+        # We look for keywords in the body or snippet
+        text_to_search = (body + " " + snippet).lower()
+        
+        if "bancolombia" in text_to_search:
+            return "Bancolombia", "Leydi", "TELEGRAM_CHAT_ID_LEY"
+        elif "rappi" in text_to_search:
+            return "RappiCard", "Leydi", "TELEGRAM_CHAT_ID_LEY"
+        else:
+            # Fallback: Treat as generic message from her
+            return from_header, "Leydi", "TELEGRAM_CHAT_ID_LEY"
+
+    # 2. Default: It's my own email
+    return from_header, "Juanma", "TELEGRAM_CHAT_ID_JUANMA"
+
 
 if __name__ == '__main__':
     # Test execution
