@@ -6,7 +6,11 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import base64
+import logging
 from dotenv import load_dotenv
+
+# Configure module logger
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -37,7 +41,7 @@ class GmailClient:
             try:
                 self.creds = Credentials.from_authorized_user_file(self.token_path, SCOPES)
             except Exception as e:
-                print(f"Error loading token.json: {e}")
+                logger.error(f"Error loading token.json: {e}")
                 self.creds = None
 
         # If there are no (valid) credentials available, let the user log in.
@@ -48,14 +52,14 @@ class GmailClient:
                     self.creds.refresh(Request())
                     refreshed = True
                 except Exception as e:
-                    print(f"Error refreshing token: {e}. Needs re-authentication.")
+                    logger.warning(f"Error refreshing token: {e}. Needs re-authentication.")
             
             if not refreshed:
                 if self.interactive:
                     if not os.path.exists(self.credentials_path):
                          raise FileNotFoundError(f"Credentials file not found at {self.credentials_path}. Please download it from Google Cloud Console.")
                     
-                    print("Interactive mode: Launching browser for authentication...")
+                    logger.info("Interactive mode: Launching browser for authentication...")
                     flow = InstalledAppFlow.from_client_secrets_file(
                         self.credentials_path, SCOPES)
                     self.creds = flow.run_local_server(port=0)
@@ -83,14 +87,14 @@ class GmailClient:
             else:
                 query += f' from:{senders[0]}'
         
-        print(f"Fetching latest {max_results} emails with query: {query}")
+        logger.info(f"Fetching latest {max_results} emails with query: {query}")
         results = self.service.users().messages().list(userId='me', q=query, maxResults=max_results).execute()
         messages = results.get('messages', [])
         
         email_data = []
 
         if not messages:
-            print('No new messages.')
+            logger.info('No new messages.')
             return []
 
         for message in messages:
@@ -136,7 +140,7 @@ class GmailClient:
                 'payload': payload # Keep full payload for deeper inspection if needed
             })
             
-        print(f"Fetched {len(email_data)} emails.")
+        logger.info(f"Fetched {len(email_data)} emails.")
         return email_data
 
     def mark_as_read(self, message_id: str):
@@ -146,7 +150,7 @@ class GmailClient:
             id=message_id,
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
-        print(f"Marked message {message_id} as read.")
+        logger.info(f"Marked message {message_id} as read.")
 
 def detect_original_source(email_data: Dict) -> Tuple[str, str, str]:
     """
