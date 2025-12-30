@@ -29,8 +29,10 @@ def escape_md(text):
 from telegram.request import HTTPXRequest
 
 class TransactionsBot:
-    def __init__(self, loader=None, token=None):
+    def __init__(self, loader=None, token=None, notifier=None):
         self.token = token or TOKEN
+        self.notifier = notifier # Callback for notifications (e.g., email)
+        self.loader = loader
         
         # Configure request with longer timeouts for VM stability
         request = HTTPXRequest(
@@ -470,25 +472,47 @@ class TransactionsBot:
         """Starts the bot with robust retry logic for network stability."""
         retry_delay = 5
         max_delay = 60
-        
+        was_failing = False
+
         while True:
             try:
-                # These methods can fail if network is down (especially get_me() inside initialize)
+                # Rebuild application to ensure fresh state on retry
+                self._build_application()
+
+                # These methods can fail if network is down
                 await self.application.initialize()
                 await self.application.start()
                 await self.application.updater.start_polling()
-                
+
                 logger.info("✅ Bot started polling successfully.")
+
+                # RECOVERY NOTIFICATION
+                if was_failing and self.notifier:
+                     try:
+                         self.notifier("✅ Servicio Restaurado", "El bot de Telegram ha conectado exitosamente tras la caída.")
+                     except Exception as e:
+                         logger.error(f"Failed to send recovery email: {e}")
+
                 break # Success, exit loop
-                
+
             except (NetworkError, TimedOut) as e:
                 logger.warning(f"⚠️ Connection failed during startup: {e}.")
+
+                # OUTAGE NOTIFICATION (First time only)
+                if not was_failing and self.notifier:
+                    try:
+                        self.notifier("⚠️ Servicio Caído (Telegram)", f"El bot no puede conectar con Telegram.\nError: {e}\n\nReintentando automáticamente...")
+                    except Exception as ex:
+                        logger.error(f"Failed to send outage email: {ex}")
+
+                was_failing = True
+
                 logger.warning(f"⏳ Retrying in {retry_delay} seconds...")
                 await asyncio.sleep(retry_delay)
-                
+
                 # Exponential backoff
                 retry_delay = min(retry_delay * 2, max_delay)
-                
+
             except Exception as e:
                 if "ConnectTimeout" in str(e) or "ConnectError" in str(e):
                      logger.warning(f"⚠️ Connection Timeout/Error: {e}.")

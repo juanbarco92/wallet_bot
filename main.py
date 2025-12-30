@@ -126,15 +126,33 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
     except Exception as e:
         logger.critical(f"Critical error in ETL loop: {e}")
         # We might want to alert here too if possible
-        if bots.get("Juanma") and bots["Juanma"].chat_id:
+        if bots.get("Juanma") and bots["Juanma"].chat_id and bots["Juanma"].application:
              await bots["Juanma"].application.bot.send_message(chat_id=bots["Juanma"].chat_id, text=f"🚨 Critical ETL Error: {e}")
 
 async def main():
+    # Define Notifier Callback
+    def notify_user(subject, message):
+         # Default to Juanma's email since he is the admin
+         # We can also notify wife if needed
+         admin_email = os.getenv("AUTHORIZED_SENDER_EMAIL").split(',')[0] # approximate
+         if not admin_email or "@" not in admin_email:
+             # Fallback
+             admin_email = "juanbarco92@gmail.com" # Hardcoded fallback or env?
+             # Better: assume AUTHORIZED_SENDER_EMAIL is set correctly
+             pass
+         
+         if admin_email:
+            gmail.send_email(to=admin_email, subject=f"[AutoTrx] {subject}", message_text=message)
+            
+            # Optional: Notify Wife too?
+            # gmail.send_email(to="lejom_0721@hotmail.com", subject=f"[AutoTrx] {subject}", message_text=message)
+
     # Initialize Bots
     token_juanma = os.getenv("TELEGRAM_TOKEN_JUANMA")
     token_leydi = os.getenv("TELEGRAM_TOKEN_LEY")
     
-    bot_juanma = TransactionsBot(token=token_juanma, loader=None)
+    # Pass notifier to bot
+    bot_juanma = TransactionsBot(token=token_juanma, loader=None, notifier=notify_user)
     bot_leydi = None
     
     # Start Polling
@@ -181,17 +199,17 @@ async def main():
         )
         logger.critical(f"Token Expired: {e}")
         # Try to send to known chat ID (Default Juanma)
-        if bot_juanma.chat_id:
+        if bot_juanma.chat_id and bot_juanma.application:
             await bot_juanma.application.bot.send_message(chat_id=bot_juanma.chat_id, text=msg, parse_mode='Markdown')
         else:
             # Fallback to env var if bot hasn't received a /start yet
             fallback_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
-            if fallback_id:
+            if fallback_id and bot_juanma.application:
                  await bot_juanma.application.bot.send_message(chat_id=fallback_id, text=msg, parse_mode='Markdown')
         
     except Exception as e:
         logger.critical(f"Fatal Startup Error: {e}\n{traceback.format_exc()}")
-        if bot_juanma.chat_id:
+        if bot_juanma.chat_id and bot_juanma.application:
             await bot_juanma.application.bot.send_message(chat_id=bot_juanma.chat_id, text=f"🔥 Fatal Startup Error: {e}")
     
     finally:
