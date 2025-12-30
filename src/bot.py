@@ -25,10 +25,21 @@ def escape_md(text):
     # In Markdown V1, we mainly need to escape *, _, `, [
     return str(text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
 
+from telegram.request import HTTPXRequest
+
 class TransactionsBot:
     def __init__(self, loader=None, token=None):
         self.token = token or TOKEN
-        self.application = ApplicationBuilder().token(self.token).build()
+        
+        # Configure request with longer timeouts for VM stability
+        request = HTTPXRequest(
+            connect_timeout=30.0,
+            read_timeout=30.0,
+            write_timeout=30.0,
+            pool_timeout=30.0
+        )
+        
+        self.application = ApplicationBuilder().token(self.token).request(request).build()
         self.pending_futures: Dict[str, asyncio.Future] = {}
         self.flow_data: Dict[str, Dict] = {} # Key: message_id, Value: State Dict
         self.manual_sessions: Dict[int, Dict] = {} # Key: user_id, Value: Manual State

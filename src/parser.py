@@ -35,14 +35,15 @@ class TransactionParser:
             r"\ba\s+(.*?)\s+el\s+\d{2}/\d{2}",
             r"a la llave\s+(@?[\w\d]+)", # Covers QR and Transfers to Key
             r"Retiraste\s+[\d\.,\s\$]+en\s+(.*?)\s+de tu", # Withdrawals
-            r"\ben\s+(.*?)(?:,|\s+el)\s+\d{2}/\d{2}", # Generic 'en X, el'
+            r"pago Factura Programada\s+(.*?)(?:\s+Ref|\s+por)", # Facturas Programadas
         ]
         
         # 3. Date Patterns
-        # Format A: "11/12/2025 a las 15:51"
+        # Format A: "11/12/2025 a las 15:51" or "30/12/2025."
         # Format B: "12/12/2025 10:00"
         # Format C: "2025-12-17 15:22:22" (Rappi)
-        self.date_pattern = r"(?:(\d{2}/\d{2}/\d{4})(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2}))|(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
+        # Note: Time group 2 is now optional inside the first branch
+        self.date_pattern = r"(?:(\d{2}/\d{2}/\d{4})(?:(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2}))?)|(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
 
     def parse(self, text: str) -> Dict:
         """Parses the email body/snippet to extract transaction details."""
@@ -142,10 +143,14 @@ class TransactionParser:
         if date_match:
 
             if date_match.group(1):
-                # Format A (DD/MM/YYYY HH:MM)
+                # Format A (DD/MM/YYYY [HH:MM])
                 date_part = date_match.group(1)
                 time_part = date_match.group(2)
-                date_str = f"{date_part} {time_part}"
+                if time_part:
+                    date_str = f"{date_part} {time_part}"
+                else:
+                    # Default time if missing
+                    date_str = f"{date_part} 00:00"
             elif date_match.group(3):
                 # Format C (YYYY-MM-DD HH:MM:SS) - Rappi
                 # normalize to DD/MM/YYYY HH:MM

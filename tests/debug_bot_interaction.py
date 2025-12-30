@@ -9,7 +9,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.bot import TransactionsBot
 
 # Logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG
+)
+# Reduce noise from some libs if needed, but keep httpx/telegram noisy
+logging.getLogger("httpx").setLevel(logging.DEBUG)
+logging.getLogger("telegram").setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 async def debug_bot():
