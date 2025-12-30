@@ -130,60 +130,60 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
              await bots["Juanma"].application.bot.send_message(chat_id=bots["Juanma"].chat_id, text=f"🚨 Critical ETL Error: {e}")
 
 async def main():
-    # Define Notifier Callback
+    logger.info("Services initializing...")
+    
+    # Initialize Core Components EARLY (so they are available for callbacks)
+    try:
+        # interactive=False is default, ensuring it raises TokenExpiredError on fail
+        gmail = GmailClient(interactive=False) 
+        parser = TransactionParser()
+        classifier = Classifier() 
+        loader = SheetsLoader(credentials=gmail.creds)
+    except TokenExpiredError as e:
+        logger.critical(f"Fatal Auth Error during startup: {e}")
+        return # Cannot proceed
+    except Exception as e:
+        logger.critical(f"Fatal Init Error: {e}\n{traceback.format_exc()}")
+        return
+
+    # Define Notifier Callback (Now closes over 'gmail' variable correctly)
     def notify_user(subject, message):
          # Default to Juanma's email since he is the admin
-         # We can also notify wife if needed
-         admin_email = os.getenv("AUTHORIZED_SENDER_EMAIL").split(',')[0] # approximate
+         admin_email = os.getenv("AUTHORIZED_SENDER_EMAIL", "").split(',')[0]
          if not admin_email or "@" not in admin_email:
              # Fallback
-             admin_email = "juanbarco92@gmail.com" # Hardcoded fallback or env?
-             # Better: assume AUTHORIZED_SENDER_EMAIL is set correctly
-             pass
+             admin_email = "juanbarco92@gmail.com" 
          
          if admin_email:
-            gmail.send_email(to=admin_email, subject=f"[AutoTrx] {subject}", message_text=message)
-            
-            # Optional: Notify Wife too?
-            # gmail.send_email(to="lejom_0721@hotmail.com", subject=f"[AutoTrx] {subject}", message_text=message)
+            try:
+                gmail.send_email(to=admin_email, subject=f"[AutoTrx] {subject}", message_text=message)
+            except Exception as ex:
+                logger.error(f"Failed to send email via callback: {ex}")
 
     # Initialize Bots
     token_juanma = os.getenv("TELEGRAM_TOKEN_JUANMA")
     token_leydi = os.getenv("TELEGRAM_TOKEN_LEY")
     
     # Pass notifier to bot
-    bot_juanma = TransactionsBot(token=token_juanma, loader=None, notifier=notify_user)
+    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user)
     bot_leydi = None
     
     # Start Polling
+    # logic: Bot will retry if down, and use notifier to send email using 'gmail' client
     await bot_juanma.start_polling()
     logger.info("Bot Juanma started.")
 
     bots = {"Juanma": bot_juanma}
 
     if token_leydi:
-        bot_leydi = TransactionsBot(token=token_leydi, loader=None)
+        bot_leydi = TransactionsBot(token=token_leydi, loader=loader) # Leydi relies on Juanma's stability or separate handler?
         await bot_leydi.start_polling()
         bots["Leydi"] = bot_leydi
         logger.info("Bot Leydi started.")
     
-    logger.info("Services initializing...")
-
+    logger.info("Services initialized. Starting ETL loop...")
+    
     try:
-        # Initialize Core Components
-        # interactive=False is default, ensuring it raises TokenExpiredError on fail
-        gmail = GmailClient(interactive=False) 
-        parser = TransactionParser()
-        classifier = Classifier() 
-        loader = SheetsLoader(credentials=gmail.creds)
-
-        # Update bots with loader
-        bot_juanma.loader = loader
-        if bot_leydi:
-            bot_leydi.loader = loader
-        
-        logger.info("Services initialized. Starting ETL loop...")
-        
         # Run ETL loop
         await etl_loop(bots, gmail, parser, loader)
 
