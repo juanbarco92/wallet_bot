@@ -3,6 +3,7 @@ import os
 from typing import Dict, Optional, List, Tuple
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.error import NetworkError, TimedOut
 import logging
 from src.config import CATEGORIES_CONFIG
 from dotenv import load_dotenv
@@ -466,9 +467,37 @@ class TransactionsBot:
         )
 
     async def start_polling(self):
-        await self.application.initialize()
-        await self.application.start()
-        await self.application.updater.start_polling()
+        """Starts the bot with robust retry logic for network stability."""
+        retry_delay = 5
+        max_delay = 60
+        
+        while True:
+            try:
+                # These methods can fail if network is down (especially get_me() inside initialize)
+                await self.application.initialize()
+                await self.application.start()
+                await self.application.updater.start_polling()
+                
+                logger.info("✅ Bot started polling successfully.")
+                break # Success, exit loop
+                
+            except (NetworkError, TimedOut) as e:
+                logger.warning(f"⚠️ Connection failed during startup: {e}.")
+                logger.warning(f"⏳ Retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+                
+                # Exponential backoff
+                retry_delay = min(retry_delay * 2, max_delay)
+                
+            except Exception as e:
+                if "ConnectTimeout" in str(e) or "ConnectError" in str(e):
+                     logger.warning(f"⚠️ Connection Timeout/Error: {e}.")
+                     logger.warning(f"⏳ Retrying in {retry_delay} seconds...")
+                     await asyncio.sleep(retry_delay)
+                     retry_delay = min(retry_delay * 2, max_delay)
+                else:
+                    logger.error(f"🔥 Fatal error starting bot: {e}")
+                    raise e
 
     async def stop(self):
         await self.application.updater.stop()
