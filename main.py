@@ -148,17 +148,14 @@ async def main():
 
     # Define Notifier Callback (Now closes over 'gmail' variable correctly)
     def notify_user(subject, message):
-         # Default to Juanma's email since he is the admin
-         admin_email = os.getenv("AUTHORIZED_SENDER_EMAIL", "").split(',')[0]
-         if not admin_email or "@" not in admin_email:
-             # Fallback
-             admin_email = "juanbarco92@gmail.com" 
+         # Send to Juanma and Leydi explicitly
+         recipients = ["juanbarco92@gmail.com", "lejom_0721@hotmail.com"]
          
-         if admin_email:
-            try:
-                gmail.send_email(to=admin_email, subject=f"[AutoTrx] {subject}", message_text=message)
-            except Exception as ex:
-                logger.error(f"Failed to send email via callback: {ex}")
+         for email_to in recipients:
+             try:
+                gmail.send_email(to=email_to, subject=f"[AutoTrx] {subject}", message_text=message)
+             except Exception as ex:
+                logger.error(f"Failed to send email to {email_to}: {ex}")
 
     # Initialize Bots
     token_juanma = os.getenv("TELEGRAM_TOKEN_JUANMA")
