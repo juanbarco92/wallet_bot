@@ -34,6 +34,16 @@ class TransactionsBot:
         self.notifier = notifier # Callback for notifications (e.g., email)
         self.loader = loader
         
+        self.pending_futures: Dict[str, asyncio.Future] = {}
+        self.flow_data: Dict[str, Dict] = {} 
+        self.manual_sessions: Dict[int, Dict] = {} 
+        self.chat_id: Optional[int] = None
+        
+        # Build immediately
+        self._build_application()
+
+    def _build_application(self):
+        """Builds (or rebuilds) the Telegram Application and registers handlers."""
         # Configure request with longer timeouts for VM stability
         request = HTTPXRequest(
             connect_timeout=30.0,
@@ -43,12 +53,7 @@ class TransactionsBot:
         )
         
         self.application = ApplicationBuilder().token(self.token).request(request).build()
-        self.pending_futures: Dict[str, asyncio.Future] = {}
-        self.flow_data: Dict[str, Dict] = {} # Key: message_id, Value: State Dict
-        self.manual_sessions: Dict[int, Dict] = {} # Key: user_id, Value: Manual State
-        self.chat_id: Optional[int] = None
-        self.loader = loader
-
+        
         # Handlers
         start_handler = CommandHandler('start', self.start)
         manual_handler = CommandHandler('manual', self.start_manual_flow)
