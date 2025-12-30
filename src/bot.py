@@ -65,6 +65,20 @@ class TransactionsBot:
         self.application.add_handler(callback_handler)
         self.application.add_handler(message_handler)
 
+    async def _retry_request(self, func, *args, **kwargs):
+        """Retries a Telegram API request on network failure."""
+        max_retries = 3
+        delay = 2
+        for attempt in range(max_retries):
+            try:
+                return await func(*args, **kwargs)
+            except (TimedOut, NetworkError) as e:
+                logger.warning(f"⚠️ Telegram Request failed (Attempt {attempt+1}/{max_retries}): {e}")
+                if attempt == max_retries - 1:
+                    raise e
+                await asyncio.sleep(delay)
+                delay *= 2
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.chat_id = update.effective_chat.id
         print(f"\n✅ BY JUPITER! I HAVE FOUND YOUR CHAT ID: {self.chat_id}\n")
@@ -83,7 +97,7 @@ class TransactionsBot:
             "status": "MANUAL_WAITING_AMOUNT",
             "data": {}
         }
-        await update.message.reply_text("📝 *Nuevo Registro Manual*\n\nPor favor ingresa el *Monto* de la transacción:")
+        await self._retry_request(update.message.reply_text, "📝 *Nuevo Registro Manual*\n\nPor favor ingresa el *Monto* de la transacción:", parse_mode='Markdown')
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages (for manual flow or split flow)."""
@@ -109,9 +123,9 @@ class TransactionsBot:
                     session["status"] = "MANUAL_WAITING_DESC"
                     self.manual_sessions[user_id] = session
                     
-                    await update.message.reply_text(f"💰 Monto: ${amount:,.2f}\n\nAhora ingresa una *Descripción* (tienda, concepto, etc):", parse_mode='Markdown')
+                    await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n\nAhora ingresa una *Descripción* (tienda, concepto, etc):", parse_mode='Markdown')
                 except ValueError:
-                    await update.message.reply_text("❌ Número inválido. Intenta de nuevo (ej: 15000 o 15k).")
+                    await self._retry_request(update.message.reply_text, "❌ Número inválido. Intenta de nuevo (ej: 15000 o 15k).")
                 return
 
             elif status == "MANUAL_WAITING_DESC":
@@ -125,7 +139,7 @@ class TransactionsBot:
                 transaction_data = session["data"]
                 del self.manual_sessions[user_id]
                 
-                await update.message.reply_text(f"✅ Descripción: {desc}. Clasificando...")
+                await self._retry_request(update.message.reply_text, f"✅ Descripción: {desc}. Clasificando...")
                 
                 # Launch Async Classification Flow
                 # We use create_task to run independent of helpful return
@@ -146,7 +160,7 @@ class TransactionsBot:
                  target_message_id = waiting_flows[0]
              elif len(waiting_flows) > 1:
                  # Only warn if not in a manual flow (already checked above)
-                 await update.message.reply_text("⚠️ Múltiples transacciones pendientes. Responde (Reply) al mensaje específico.")
+                 await self._retry_request(update.message.reply_text, "⚠️ Múltiples transacciones pendientes. Responde (Reply) al mensaje específico.")
                  return
              else:
                  return
@@ -198,7 +212,7 @@ class TransactionsBot:
                 )
             except Exception as e:
                 logger.error(f"Failed to edit message {target_message_id}: {e}")
-                await update.message.reply_text(f"Monto asignado: ${amount_input:,.2f}. Selecciona categoría abajo.", reply_markup=InlineKeyboardMarkup(keyboard))
+                await self._retry_request(update.message.reply_text, f"Monto asignado: ${amount_input:,.2f}. Selecciona categoría abajo.", reply_markup=InlineKeyboardMarkup(keyboard))
             
             # Delete user's message
             try:
@@ -207,7 +221,7 @@ class TransactionsBot:
                 pass
 
         except ValueError:
-            await update.message.reply_text("❌ Por favor ingresa un número válido (ej: 50000 o 50k).")
+            await self._retry_request(update.message.reply_text, "❌ Por favor ingresa un número válido (ej: 50000 o 50k).")
 
     async def process_manual_transaction(self, transaction: Dict):
         """Orchestrates the classification and saving for manual transactions."""
@@ -218,7 +232,7 @@ class TransactionsBot:
         
         if not splits:
             if self.chat_id:
-                await self.application.bot.send_message(chat_id=self.chat_id, text="❌ Transacción manual cancelada.")
+                await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="❌ Transacción manual cancelada.")
             return
 
         # 2. Save
@@ -229,9 +243,9 @@ class TransactionsBot:
                 self.loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
             
             # Confirm
-            await self.application.bot.send_message(chat_id=self.chat_id, text="💾 Transacción guardada en Google Sheets.")
+            await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="💾 Transacción guardada en Google Sheets.")
         else:
-            await self.application.bot.send_message(chat_id=self.chat_id, text="⚠️ Error: No hay conexión con Google Sheets (Loader no configurado).")
+            await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="⚠️ Error: No hay conexión con Google Sheets (Loader no configurado).")
 
     def _get_category_keyboard(self, scope="Personal"):
         """Generates keyboard from config based on scope."""
@@ -629,7 +643,8 @@ class TransactionsBot:
         )
 
         try:
-            message = await self.application.bot.send_message(
+            message = await self._retry_request(
+                self.application.bot.send_message,
                 chat_id=chat_id_to_use, 
                 text=text, 
                 reply_markup=reply_markup,
