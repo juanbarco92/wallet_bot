@@ -62,7 +62,8 @@ class SheetsLoader:
             # I will use current time for Timestamp, and transaction date for Date.
             
             from datetime import datetime
-            current_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Timestamp: Allow override from transaction dict for historical loads
+            current_timestamp = transaction.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             tx_date = transaction.get("date")
             description = transaction.get("merchant") # Maps to Description/Merchant
             
@@ -89,7 +90,7 @@ class SheetsLoader:
                 description
             ]
             
-            self.sheet.append_row(row)
+            self.sheet.append_row(row, value_input_option='USER_ENTERED')
             print(f"Successfully added row: {row}")
             
         except Exception as e:
