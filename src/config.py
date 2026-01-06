@@ -20,23 +20,23 @@ FAMILIAR_CATEGORIES = {
         "[Bolsillo] Taller General"
     ],
     "👧 Emma": [
-        "Basics",
-        "Desarrollo",
-        "Ropa",
-        "Salud",
+        "Basics Emma",
+        "Desarrollo Emma",
+        "Ropa Emma",
+        "Salud Emma",
         "Mildred",
         "[Bolsillo] Prima Mildred",
-        "Otras Compras",
+        "Otras Compras Emma",
         "Pensión Jardin",
         "[Bolsillo] Matricula Jardin"
     ],
     "👶 Benja": [
-        "Basics",
-        "Desarrollo",
-        "Ropa",
-        "Salud",
+        "Basics Benja",
+        "Desarrollo Benja",
+        "Ropa Benja",
+        "Salud Benja",
         "STEM",
-        "Otras Compras"
+        "Otras Compras Benja"
     ],
     "🎬 Entretenimiento": [
         "[Bolsillo] Viajes",
