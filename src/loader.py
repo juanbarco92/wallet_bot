@@ -114,7 +114,14 @@ class SheetsLoader:
         If scope is 'Personal' and user is provided, filters by that user.
         """
         if not self.sheet:
-             return 0.0
+             try:
+                 if self.client:
+                     sh = self.client.open_by_key(self.sheet_id)
+                     self.sheet = sh.worksheet("Base_Transacciones")
+                 else:
+                     return 0.0
+             except:
+                 return 0.0
              
         try:
             # 1. Determine Start Date
