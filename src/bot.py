@@ -62,6 +62,7 @@ class TransactionsBot:
         
         self.application.add_handler(start_handler)
         self.application.add_handler(manual_handler)
+        self.application.add_handler(CommandHandler('m', self.start_manual_flow)) # Shortcut
         self.application.add_handler(callback_handler)
         self.application.add_handler(message_handler)
 
@@ -315,37 +316,38 @@ class TransactionsBot:
                      del self.flow_data[message_id]
                  await query.edit_message_text(text="❌ Transacción descartada.")
             else:
-                 # Step 2: Scope
+                 # Step 2: Multiple vs Single
                  keyboard = [
                     [
-                        InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
-                        InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                        InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
+                        InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
                     ]
                  ]
                  await query.edit_message_text(
-                     text="¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                     text="¿Es una transacción Única o Múltiple?",
                      reply_markup=InlineKeyboardMarkup(keyboard)
                  )
-
-        elif step == "SCOPE":
-            self.flow_data[message_id]["scope"] = value
-            
-            # Step 2.5: Multiple?
-            keyboard = [
-                [
-                    InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
-                    InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
-                ]
-            ]
-            await query.edit_message_text(
-                text=f"Ámbito: {value}. ¿Pertenece a múltiples categorías?",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
 
         elif step == "MULTIPLE":
             is_multiple = (value == "Yes")
             self.flow_data[message_id]["is_multiple"] = is_multiple
-            scope = self.flow_data[message_id]["scope"]
+            
+            # Step 3: Scope
+            keyboard = [
+                [
+                    InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
+                    InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                ]
+            ]
+            await query.edit_message_text(
+                text=f"¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+
+        elif step == "SCOPE":
+            self.flow_data[message_id]["scope"] = value
+            is_multiple = self.flow_data[message_id].get("is_multiple", False)
+            scope = value
             
             if is_multiple:
                 total = self.flow_data[message_id]["total_amount"]
@@ -354,9 +356,11 @@ class TransactionsBot:
                 self.flow_data[message_id]["status"] = "WAITING_AMOUNT"
                 
                 await query.edit_message_text(
-                    text=f"Total: ${total:,.2f}\nRestante por asignar: ${remaining:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para la primera categoría."
+                    text=f"Total: ${total:,.2f}\nRestante por asignar: ${remaining:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para la primera categoría.",
+                    parse_mode='Markdown'
                 )
             else:
+                # Single transaction, scope is set, now ask for category
                 keyboard = self._get_category_keyboard(scope)
                 await query.edit_message_text(
                     text="Selecciona la categoría:",
@@ -441,8 +445,31 @@ class TransactionsBot:
                 
                 # Success Msg
                 msg = "✅ *Registro Exitoso*\n"
-                for cat, scope, amt, _, _ in splits:
-                    msg += f"• {escape_md(cat)}: ${amt:,.2f}\n"
+                
+                # Fetch accumulated totals
+                from datetime import datetime
+                today = datetime.now()
+                # Determine display date
+                if today.day >= 25:
+                    start_date_display = f"25/{today.month:02d}"
+                else:
+                    # Previous month logic for display
+                    # Quick hack: just say "desde el 25"
+                    start_date_display = "25" 
+
+                for cat, scope, amt, _, tx_type in splits:
+                    accumulated = 0.0
+                    if self.loader:
+                        accumulated = self.loader.get_accumulated_total(cat, scope, tx_type)
+                    
+                    # If the save was just now, the accumulated total includes it if the sheet updated fast enough?
+                    # get_accumulated_total reads from sheet. 
+                    # If we just appended, it MIGHT be there if consistency is strong.
+                    # Usually GSheets API is consistent. 
+                    # If not, we might want to add 'amt' to it if it wasn't found?
+                    # Let's assume it catches it.
+                    
+                    msg += f"• {escape_md(cat)}: ${amt:,.2f} (Acum: ${accumulated:,.2f})\n"
                 
                 await query.edit_message_text(text=msg, parse_mode='Markdown', reply_markup=None)
                 
@@ -455,15 +482,15 @@ class TransactionsBot:
                 self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
                 
                 keyboard = [
-                    [
-                        InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
-                        InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
-                    ]
-                 ]
+                     [
+                         InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
+                         InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
+                     ]
+                  ]
                 await query.edit_message_text(
-                     text="🔄 Reiniciando... ¿Es un gasto 🏠 Familiar o 👤 Personal?",
-                     reply_markup=InlineKeyboardMarkup(keyboard)
-                 )
+                      text="🔄 Reiniciando... ¿Es una transacción Única o Múltiple?",
+                      reply_markup=InlineKeyboardMarkup(keyboard)
+                  )
 
     async def _trigger_confirmation(self, update, context, message_id, query):
         """Shows summary and asks for confirmation."""

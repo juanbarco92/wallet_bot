@@ -3,6 +3,8 @@ import os
 from typing import Dict, List
 from dotenv import load_dotenv
 
+from datetime import datetime, timedelta
+
 load_dotenv()
 
 class SheetsLoader:
@@ -95,6 +97,108 @@ class SheetsLoader:
             
         except Exception as e:
             print(f"Error appending to sheet: {e}")
+
+    def get_accumulated_total(self, category_name: str, scope: str, transaction_type: str) -> float:
+        """
+        Calculates the accumulated total for a category since the 25th of the previous cycle.
+        Cycle Rule:
+        - If today >= 25: Start Date is 25th of THIS month.
+        - If today < 25: Start Date is 25th of PREVIOUS month.
+        """
+        if not self.client:
+            return 0.0
+
+        try:
+            if not self.sheet:
+                 # Try to open or fail silently
+                 try:
+                     sh = self.client.open_by_key(self.sheet_id)
+                     self.sheet = sh.worksheet("Base_Transacciones")
+                 except:
+                     return 0.0
+
+            # 1. Determine Start Date
+            today = datetime.now()
+            if today.day >= 25:
+                start_date = datetime(today.year, today.month, 25)
+            else:
+                # Go to first day of this month, then back one day to get prev month
+                first_of_month = today.replace(day=1)
+                last_of_prev = first_of_month - timedelta(days=1)
+                start_date = datetime(last_of_prev.year, last_of_prev.month, 25)
+            
+            # Reset time to beginning of day
+            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # 2. Fetch Data
+            # Note: get_all_records returns dictionaries using headers. 
+            # Assuming headers are: [Fecha, Timestamp, Usuario, Scope, Tipo Movimiento, Categoría Principal, Subcategoría, Monto, Descripción]
+            # or closely matching what we append. We used `append_row` without headers in `append_transaction` but if the sheet
+            # exists it has headers. Let's use get_all_values() to be safer about index but get_all_records is easier if headers exist.
+            # Given `append_transaction` doesn't enforce headers on Create, we should be careful.
+            # Attempt get_all_records first.
+            
+            rows = self.sheet.get_all_records()
+            
+            total = 0.0
+            
+            for row in rows:
+                try:
+                    # Parse Date
+                    # Date format in sheet might be 'YYYY-MM-DD' or 'DD/MM/YYYY'. 
+                    # We need to be robust.
+                    row_date_str = str(row.get("Fecha", "") or row.get("date", ""))
+                    if not row_date_str:
+                        continue
+                        
+                    try:
+                        # Try ISO first
+                        row_date = datetime.strptime(row_date_str, "%Y-%m-%d")
+                    except ValueError:
+                        try:
+                            # Try DD/MM/YYYY
+                            row_date = datetime.strptime(row_date_str, "%d/%m/%Y")
+                        except:
+                             # Try parsing with dateutil if available or skip
+                             continue
+                    
+                    if row_date < start_date:
+                        continue
+                        
+                    # Filter by Category, Scope, Type
+                    # Category in sheet might be split into Main/Sub.
+                    # We need to construct the full name to compare or compare components.
+                    # Our input `category_name` is "Main - Sub" or "Main".
+                    
+                    main_cat_sheet = str(row.get("Categoría Principal", "")).strip()
+                    sub_cat_sheet = str(row.get("Subcategoría", "")).strip()
+                    
+                    full_cat_sheet = f"{main_cat_sheet} - {sub_cat_sheet}" if sub_cat_sheet else main_cat_sheet
+                    
+                    # Fuzzy match or exact? Exact is safer.
+                    if full_cat_sheet != category_name:
+                        continue
+                        
+                    if str(row.get("Scope", "")) != scope:
+                        continue
+                        
+                    # Check Type (Gasto vs Ingreso)
+                    # Sheet column: "Tipo Movimiento"
+                    if str(row.get("Tipo Movimiento", "")) != transaction_type:
+                        continue
+                        
+                    # Sum Amount
+                    amount_str = str(row.get("Monto", "0")).replace(',', '').replace('$', '')
+                    total += float(amount_str)
+                    
+                except Exception as ex:
+                    continue
+                    
+            return total
+
+        except Exception as e:
+            print(f"Error calculating accumulation: {e}")
+            return 0.0
 
 if __name__ == "__main__":
     # Test
