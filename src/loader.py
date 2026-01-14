@@ -108,15 +108,15 @@ class SheetsLoader:
         if not self.client:
             return 0.0
 
+    def get_accumulated_total(self, category_name: str, scope: str, transaction_type: str, user: str = None) -> float:
+        """
+        Calculates accumulated total for a category/scope/type since the 25th of current/prev month.
+        If scope is 'Personal' and user is provided, filters by that user.
+        """
+        if not self.sheet:
+             return 0.0
+             
         try:
-            if not self.sheet:
-                 # Try to open or fail silently
-                 try:
-                     sh = self.client.open_by_key(self.sheet_id)
-                     self.sheet = sh.worksheet("Base_Transacciones")
-                 except:
-                     return 0.0
-
             # 1. Determine Start Date
             today = datetime.now()
             if today.day >= 25:
@@ -130,66 +130,94 @@ class SheetsLoader:
             # Reset time to beginning of day
             start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
             
-            # 2. Fetch Data
-            # Note: get_all_records returns dictionaries using headers. 
-            # Assuming headers are: [Fecha, Timestamp, Usuario, Scope, Tipo Movimiento, Categoría Principal, Subcategoría, Monto, Descripción]
-            # or closely matching what we append. We used `append_row` without headers in `append_transaction` but if the sheet
-            # exists it has headers. Let's use get_all_values() to be safer about index but get_all_records is easier if headers exist.
-            # Given `append_transaction` doesn't enforce headers on Create, we should be careful.
-            # Attempt get_all_records first.
-            
             rows = self.sheet.get_all_records()
             
             total = 0.0
             
-            for row in rows:
+            for raw_row in rows:
                 try:
+                    # Normalize keys
+                    row = {k.strip().lower(): v for k, v in raw_row.items()}
+                    
                     # Parse Date
-                    # Date format in sheet might be 'YYYY-MM-DD' or 'DD/MM/YYYY'. 
-                    # We need to be robust.
-                    row_date_str = str(row.get("Fecha", "") or row.get("date", ""))
+                    row_date_str = str(row.get("fecha") or row.get("date") or "").strip()
                     if not row_date_str:
                         continue
                         
                     try:
-                        # Try ISO first
-                        row_date = datetime.strptime(row_date_str, "%Y-%m-%d")
+                        if " " in row_date_str:
+                            row_date = datetime.strptime(row_date_str.split(" ")[0], "%d/%m/%Y")
+                        else:
+                            row_date = datetime.strptime(row_date_str, "%d/%m/%Y")
                     except ValueError:
                         try:
-                            # Try DD/MM/YYYY
-                            row_date = datetime.strptime(row_date_str, "%d/%m/%Y")
+                            row_date = datetime.strptime(row_date_str, "%Y-%m-%d")
                         except:
-                             # Try parsing with dateutil if available or skip
                              continue
                     
                     if row_date < start_date:
                         continue
-                        
-                    # Filter by Category, Scope, Type
-                    # Category in sheet might be split into Main/Sub.
-                    # We need to construct the full name to compare or compare components.
-                    # Our input `category_name` is "Main - Sub" or "Main".
                     
-                    main_cat_sheet = str(row.get("Categoría Principal", "")).strip()
-                    sub_cat_sheet = str(row.get("Subcategoría", "")).strip()
+                    # Parse Query Category
+                    query_main = category_name
+                    query_sub = ""
+                    if " - " in category_name:
+                        parts = category_name.split(" - ", 1)
+                        query_main = parts[0].strip()
+                        query_sub = parts[1].strip()
+                    else:
+                        query_main = category_name.strip()
                     
-                    full_cat_sheet = f"{main_cat_sheet} - {sub_cat_sheet}" if sub_cat_sheet else main_cat_sheet
+                    # Sheet Values
+                    sheet_main = str(row.get("categoría principal") or row.get("categoría (principal)") or "").strip()
+                    sheet_sub = str(row.get("subcategoría") or row.get("subcategoría ") or "").strip()
                     
-                    # Fuzzy match or exact? Exact is safer.
-                    if full_cat_sheet != category_name:
+                    # LOGIC: Matches
+                    match_cat = False
+                    if sheet_main == query_main and sheet_sub == query_sub:
+                        match_cat = True
+                    elif not sheet_main and sheet_sub == query_sub and query_sub:
+                         match_cat = True
+                    elif not query_sub and sheet_main == query_main:
+                         match_cat = True
+                         
+                    if not match_cat:
                         continue
                         
-                    if str(row.get("Scope", "")) != scope:
+                    # Scope
+                    scope_val = ""
+                    for k, v in row.items():
+                        if k.startswith("scope"):
+                            scope_val = str(v)
+                            break
+                    if scope_val != scope:
                         continue
                         
-                    # Check Type (Gasto vs Ingreso)
-                    # Sheet column: "Tipo Movimiento"
-                    if str(row.get("Tipo Movimiento", "")) != transaction_type:
+                    # Type
+                    type_val = ""
+                    for k, v in row.items():
+                        if k.startswith("tipo"):
+                            type_val = str(v)
+                            break
+                    
+                    if type_val != transaction_type:
                         continue
-                        
+
+                    # User Filter (NEW) based on Scope
+                    if scope == "Personal" and user:
+                        # Key: 'usuario', 'usuario '
+                        row_user = str(row.get("usuario") or row.get("usuario ") or "").strip()
+                        if row_user.lower() != user.lower():
+                            continue
+
                     # Sum Amount
-                    amount_str = str(row.get("Monto", "0")).replace(',', '').replace('$', '')
-                    total += float(amount_str)
+                    amount_val = row.get("monto", 0)
+                    if isinstance(amount_val, (int, float)):
+                        total += float(amount_val)
+                    else:
+                        amount_str = str(amount_val).replace(',', '').replace('$', '').strip()
+                        if amount_str:
+                             total += float(amount_str)
                     
                 except Exception as ex:
                     continue

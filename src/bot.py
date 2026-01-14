@@ -457,10 +457,10 @@ class TransactionsBot:
                     # Quick hack: just say "desde el 25"
                     start_date_display = "25" 
 
-                for cat, scope, amt, _, tx_type in splits:
+                for cat, scope, amt, user_who_paid, tx_type in splits:
                     accumulated = 0.0
                     if self.loader:
-                        accumulated = self.loader.get_accumulated_total(cat, scope, tx_type)
+                        accumulated = self.loader.get_accumulated_total(cat, scope, tx_type, user=user_who_paid)
                     
                     # If the save was just now, the accumulated total includes it if the sheet updated fast enough?
                     # get_accumulated_total reads from sheet. 
