@@ -105,12 +105,18 @@ class TransactionsBot:
         user_id = update.effective_user.id
         self.chat_id = update.effective_chat.id # Ensure we grab chat_id locally
         
-        # Check config
-        queue = RECURRING_EXPENSES.get(self.chat_id, [])
+        # Load from Sheet if Loader available
+        queue = []
+        if self.loader:
+            # We want expenses for this Chat ID
+            recurring_map = self.loader.get_recurring_expenses()
+            queue = recurring_map.get(self.chat_id, [])
+        else:
+            # Fallback to config (Legacy) or empty
+            queue = RECURRING_EXPENSES.get(self.chat_id, [])
+
         if not queue:
-            # Fallback check for user_id if chat_id mapping fails (though config uses chat_id)
-            # Maybe check by user_name in logic? For now strict chat_id match.
-            await self._retry_request(update.message.reply_text, "⚠️ No tienes gastos fijos configurados. Contacta al administrador.")
+            await self._retry_request(update.message.reply_text, "⚠️ No tienes gastos fijos configurados en la hoja 'Config_Fijos'.\nUsa /nuevo_fijo para agregar uno.")
             return
 
         self.recurring_sessions[user_id] = {
