@@ -110,12 +110,29 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
                     
                     # 5. Mark as read only if ALL saved successfully
                     if all_saved:
+                        # Mark email as read
                         gmail.mark_as_read(email_data['id'])
+                        
+                        # Update Telegram Message to Success
+                        if message_id and current_bot and current_bot.application:
+                            try:
+                                msg_text = "💾 *Guardado Exitoso* en Google Sheets."
+                                await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                            except Exception as e:
+                                logger.error(f"Failed to edit completion message: {e}")
+
                     else:
                         logger.warning(f"Skipping mark_as_read for email {email_data['id']} due to save failure.")
-                        # Notify user?
-                        if current_bot and current_bot.chat_id and current_bot.application:
-                             await current_bot.application.bot.send_message(chat_id=current_bot.chat_id, text=f"⚠️ Error guardando transacción de {email_data.get('snippet', 'unknown')}. No se marcará como leído.")
+                        # Notify user via Edit if possible
+                        if current_bot and current_bot.application:
+                             err_text = f"⚠️ Error guardando transacción de {email_data.get('snippet', 'unknown')}. No se marcará como leído."
+                             try:
+                                 if message_id:
+                                     await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=err_text)
+                                 else:
+                                     await current_bot.application.bot.send_message(chat_id=current_bot.chat_id, text=err_text)
+                             except Exception as e:
+                                 logger.error(f"Failed to edit error message: {e}")
             
             except TokenExpiredError as tee:
                 raise tee # Escalate to main handler

@@ -419,9 +419,23 @@ class TransactionsBot:
                      # Fallback
                      await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
             else:
-                 await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="⚠️ Error al guardar en Google Sheets. Por favor revisa la hoja o logs.")
+                 msg_err = "⚠️ Error al guardar en Google Sheets."
+                 try:
+                     if message_id:
+                         await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_err)
+                     else:
+                         await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_err)
+                 except:
+                      pass
         else:
-            await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="⚠️ Error: No hay conexión con Google Sheets (Loader no configurado).")
+             msg_err = "⚠️ Error: No hay conexión con Google Sheets."
+             try:
+                 if message_id:
+                     await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_err)
+                 else:
+                     await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_err)
+             except:
+                  pass
 
     def _get_category_keyboard(self, scope="Personal"):
         """Generates keyboard from config based on scope."""
