@@ -604,6 +604,12 @@ class TransactionsBot:
                      if not future.done():
                          future.set_result(splits)
                 
+                # Feedback to User
+                try:
+                    await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
+                except:
+                    pass
+
                 # Cleanup
                 if message_id in self.flow_data:
                     del self.flow_data[message_id]
