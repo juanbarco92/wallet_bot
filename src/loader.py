@@ -28,11 +28,11 @@ class SheetsLoader:
              # We can't do much if no auth provided
              pass
 
-    def append_transaction(self, transaction: Dict, category: str, scope: str = "Personal", user_who_paid: str = "User", transaction_type: str = "Gasto"):
-        """Appends a row to the sheet."""
+    def append_transaction(self, transaction: Dict, category: str, scope: str = "Personal", user_who_paid: str = "User", transaction_type: str = "Gasto") -> bool:
+        """Appends a row to the sheet. Returns True if successful, False otherwise."""
         if not self.client:
              print("No gspread client. Skipping load.")
-             return
+             return False
 
         try:
             if not self.sheet:
@@ -94,9 +94,11 @@ class SheetsLoader:
             
             self.sheet.append_row(row, value_input_option='USER_ENTERED')
             print(f"Successfully added row: {row}")
+            return True
             
         except Exception as e:
             print(f"Error appending to sheet: {e}")
+            return False
 
     def get_accumulated_total(self, category_name: str, scope: str, transaction_type: str) -> float:
         """

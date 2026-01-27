@@ -97,16 +97,25 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
 
                     logger.info(f"User confirmed splits: {splits}")
 
-                    # 4. Load
+                    all_saved = True
                     for category, scope, split_amount, user_who_paid, tx_type in splits:
                          # Create a copy or modify amount
                          t_copy = transaction.copy()
                          t_copy['amount'] = split_amount
                          
-                         loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
+                         success = loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
+                         if not success:
+                             logger.error(f"Failed to save transaction split to Sheets: {t_copy}")
+                             all_saved = False
                     
-                    # 5. Mark as read
-                    gmail.mark_as_read(email_data['id'])
+                    # 5. Mark as read only if ALL saved successfully
+                    if all_saved:
+                        gmail.mark_as_read(email_data['id'])
+                    else:
+                        logger.warning(f"Skipping mark_as_read for email {email_data['id']} due to save failure.")
+                        # Notify user?
+                        if current_bot and current_bot.chat_id and current_bot.application:
+                             await current_bot.application.bot.send_message(chat_id=current_bot.chat_id, text=f"⚠️ Error guardando transacción de {email_data.get('snippet', 'unknown')}. No se marcará como leído.")
             
             except TokenExpiredError as tee:
                 raise tee # Escalate to main handler

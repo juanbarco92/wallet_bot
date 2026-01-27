@@ -201,14 +201,19 @@ class TransactionsBot:
             # So manual flow logic here is actually fine as is, because `handle_message` implementation for "WAITING_AMOUNT" 
             # is only for the SPLIT logic (which already has a scope in state).
             
-            current_scope = state.get("scope", "Personal")
-            keyboard = self._get_category_keyboard(current_scope)
+            # Reply with SCOPE selection for this split
+            keyboard = [
+                [
+                    InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
+                    InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                ]
+            ]
             
             try:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=target_message_id,
-                    text=f"Monto asignado: ${amount_input:,.2f}. ¿A qué categoría pertenece?",
+                    text=f"Monto asignado: ${amount_input:,.2f}. ¿Es Familiar o Personal?",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
             except Exception as e:
@@ -237,14 +242,21 @@ class TransactionsBot:
             return
 
         # 2. Save
+        # 2. Save
         if self.loader:
+            all_saved = True
             for category, scope, amount, user_who_paid, tx_type in splits:
                 t_copy = transaction.copy()
                 t_copy['amount'] = amount
-                self.loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
+                success = self.loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
+                if not success:
+                    all_saved = False
             
             # Confirm
-            await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="💾 Transacción guardada en Google Sheets.")
+            if all_saved:
+                await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="💾 Transacción guardada en Google Sheets.")
+            else:
+                 await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="⚠️ Error al guardar en Google Sheets. Por favor revisa la hoja o logs.")
         else:
             await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="⚠️ Error: No hay conexión con Google Sheets (Loader no configurado).")
 
@@ -367,11 +379,42 @@ class TransactionsBot:
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
 
+        elif step == "SCOPE":
+            is_multiple = self.flow_data[message_id].get("is_multiple", False)
+            
+            if is_multiple:
+                # Per-Split Scope
+                self.flow_data[message_id]["current_split_scope"] = value
+                selected_scope = value
+                
+                # Now ask for Category
+                keyboard = self._get_category_keyboard(selected_scope)
+                await query.edit_message_text(
+                    text=f"Scope: {selected_scope}. Selecciona la categoría:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+            else:
+                # Global Scope (Single)
+                self.flow_data[message_id]["scope"] = value
+                selected_scope = value
+                
+                # Now ask for Category
+                keyboard = self._get_category_keyboard(selected_scope)
+                await query.edit_message_text(
+                    text="Selecciona la categoría:",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                ) 
+                
         elif step == "CAT":
             category = value
             # Store selected category
             self.flow_data[message_id]["pending_category"] = category
-            scope = self.flow_data[message_id]["scope"]
+            
+            is_multiple = self.flow_data[message_id].get("is_multiple", False)
+            if is_multiple:
+                 scope = self.flow_data[message_id].get("current_split_scope", "Personal")
+            else:
+                 scope = self.flow_data[message_id]["scope"]
             
             # Check for Subcategories
             categories_dict = CATEGORIES_CONFIG.get(scope, {})
@@ -462,12 +505,10 @@ class TransactionsBot:
                     if self.loader:
                         accumulated = self.loader.get_accumulated_total(cat, scope, tx_type, user=user_who_paid)
                     
-                    # If the save was just now, the accumulated total includes it if the sheet updated fast enough?
-                    # get_accumulated_total reads from sheet. 
-                    # If we just appended, it MIGHT be there if consistency is strong.
-                    # Usually GSheets API is consistent. 
-                    # If not, we might want to add 'amt' to it if it wasn't found?
-                    # Let's assume it catches it.
+                    # Logic: The transaction is saved by main.py *after* this callback finishes (or concurrently).
+                    # Since reads/writes are not instant, we assume the sheet doesn't have it yet.
+                    # We manually add the current amount to the total for display.
+                    accumulated += amt
                     
                     msg += f"• {escape_md(cat)}: ${amt:,.2f} (Acum: ${accumulated:,.2f})\n"
                 
@@ -576,8 +617,13 @@ class TransactionsBot:
 
     async def _finalize_classification_step(self, update, context, message_id, category_name):
         """Logic to split or finish classification."""
-        scope = self.flow_data[message_id]["scope"]
+        # Use split-specific scope if multiple, else global
         state = self.flow_data[message_id]
+        if state.get("is_multiple"):
+             scope = state.get("current_split_scope", "Personal")
+        else:
+             scope = state.get("scope", "Personal")
+             
         
         # Capture User Name
         user_name = update.effective_user.first_name or "User"
