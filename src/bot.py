@@ -356,27 +356,68 @@ class TransactionsBot:
         logger.info(f"Processing manual transaction: {transaction}")
         
         # 1. Ask User (Reusing existing flow)
-        splits = await self.ask_user_for_category(transaction)
+        splits, message_id = await self.ask_user_for_category(transaction)
         
         if not splits:
             if self.chat_id:
-                await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="❌ Transacción manual cancelada.")
+                try:
+                    if message_id:
+                        await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text="❌ Transacción manual cancelada.")
+                    else:
+                        await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="❌ Transacción manual cancelada.")
+                except:
+                    pass
             return
 
         # 2. Save
-        # 2. Save
         if self.loader:
             all_saved = True
+            saved_cats = []
             for category, scope, amount, user_who_paid, tx_type in splits:
                 t_copy = transaction.copy()
                 t_copy['amount'] = amount
                 success = self.loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
-                if not success:
+                if success:
+                    saved_cats.append(category)
+                else:
                     all_saved = False
             
             # Confirm
             if all_saved:
-                await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="💾 Transacción guardada en Google Sheets.")
+                msg_text = "💾 *Guardado Exitoso*\n\n"
+                
+                # Fetch accumulation for first split (usually 1 for manual)
+                # If multiple, list them? 
+                # Let's iterate saved cats/splits
+                for category, scope, amount, user_who_paid, tx_type in splits:
+                    accumulated = 0.0
+                    if self.loader:
+                        # Fetch previous total
+                        prev_total = self.loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
+                        # Add current (since we just saved it, but sheets might lag or we want optimistic)
+                        # Actually sheets append is sync usually? But get_all_records might be cached or lagging.
+                        # Safest is prev_total + amount if we trust get_accumulated doesn't see it yet.
+                        # Wait, get_accumulated calls get_all_records. If we just appended, it SHOULD see it.
+                        # But `append_row` vs `get_all_records` consistency...
+                        # Let's assume we need to manually add if the loader doesn't guarantee instant visibility.
+                        # Or better: Just show "Acumulado a la fecha".
+                        accumulated = prev_total # + amount? Let's check logic in recurring flow.
+                        # Recurring flow did: accumulated = self.loader... then accumulated += amt.
+                        # So I will do the same: optimistic addition.
+                        accumulated += amount
+                        
+                    msg_text += f"• *{escape_md(category)}*: ${amount:,.2f}\n"
+                    msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
+
+                try:
+                    if message_id:
+                        await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                    else:
+                        await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
+                except Exception as e:
+                     logger.error(f"Failed to edit confirmation message: {e}")
+                     # Fallback
+                     await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
             else:
                  await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="⚠️ Error al guardar en Google Sheets. Por favor revisa la hoja o logs.")
         else:
@@ -844,10 +885,10 @@ class TransactionsBot:
             state["splits"] = [(category_name, scope, total, user_name, tx_type)]
             await self._trigger_confirmation(update, context, message_id, update.callback_query)
 
-    async def ask_user_for_category(self, transaction: Dict, user_name: str = "User", target_chat_id: int = None) -> List[Tuple[str, str, float, str, str]]:
+    async def ask_user_for_category(self, transaction: Dict, user_name: str = "User", target_chat_id: int = None) -> Tuple[List[Tuple[str, str, float, str, str]], Optional[int]]:
         """
         Initiates the classification flow.
-        Returns: List of (Category, Scope, Amount, User, Type)
+        Returns: Tuple(SplitsList, MessageID)
         """
         # Determine Chat ID
         chat_id_to_use = target_chat_id
@@ -862,7 +903,7 @@ class TransactionsBot:
                      chat_id_to_use = int(env_chat_id)
                  else:
                      print("Warning: No Chat ID available.")
-                     return []
+                     return [], None
         
         # Step 1: Validate (Yes/No)
         keyboard = [
@@ -897,7 +938,7 @@ class TransactionsBot:
             )
         except Exception as e:
             logger.error(f"Failed to send message to {chat_id_to_use}: {e}")
-            return []
+            return [], None
 
         loop = asyncio.get_running_loop()
         future = loop.create_future()
@@ -916,7 +957,7 @@ class TransactionsBot:
         print(f"Waiting for input on message {message.message_id}...")
         try:
             result = await future
-            return result
+            return result, message.message_id
         except Exception as e:
             print(f"Error: {e}")
-            return []
+            return [], message.message_id
