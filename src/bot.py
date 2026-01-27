@@ -5,7 +5,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 from telegram.error import NetworkError, TimedOut
 import logging
-from src.config import CATEGORIES_CONFIG
+from src.config import CATEGORIES_CONFIG, RECURRING_EXPENSES
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -37,6 +37,7 @@ class TransactionsBot:
         self.pending_futures: Dict[str, asyncio.Future] = {}
         self.flow_data: Dict[str, Dict] = {} 
         self.manual_sessions: Dict[int, Dict] = {} 
+        self.recurring_sessions: Dict[int, Dict] = {} # {chat_id: {queue: [], index: 0}}
         self.chat_id: Optional[int] = None
         
         # Build immediately
@@ -63,6 +64,7 @@ class TransactionsBot:
         self.application.add_handler(start_handler)
         self.application.add_handler(manual_handler)
         self.application.add_handler(CommandHandler('m', self.start_manual_flow)) # Shortcut
+        self.application.add_handler(CommandHandler('fijos', self.start_recurring_flow)) # Recurring
         self.application.add_handler(callback_handler)
         self.application.add_handler(message_handler)
 
@@ -98,7 +100,103 @@ class TransactionsBot:
             "status": "MANUAL_WAITING_AMOUNT",
             "data": {}
         }
-        await self._retry_request(update.message.reply_text, "📝 *Nuevo Registro Manual*\n\nPor favor ingresa el *Monto* de la transacción:", parse_mode='Markdown')
+    async def start_recurring_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Starts the flow to confirm recurring expenses."""
+        user_id = update.effective_user.id
+        self.chat_id = update.effective_chat.id # Ensure we grab chat_id locally
+        
+        # Check config
+        queue = RECURRING_EXPENSES.get(self.chat_id, [])
+        if not queue:
+            # Fallback check for user_id if chat_id mapping fails (though config uses chat_id)
+            # Maybe check by user_name in logic? For now strict chat_id match.
+            await self._retry_request(update.message.reply_text, "⚠️ No tienes gastos fijos configurados. Contacta al administrador.")
+            return
+
+        self.recurring_sessions[user_id] = {
+            "queue": [item.copy() for item in queue], # Deep copy to allow specific edits
+            "index": 0,
+            "status": "RECURRING_REVIEW",
+            "saved_count": 0
+        }
+        
+        await self._show_next_recurring_item(update, context, user_id)
+
+    async def _show_next_recurring_item(self, update, context, user_id):
+        session = self.recurring_sessions[user_id]
+        idx = session["index"]
+        queue = session["queue"]
+        
+        if idx >= len(queue):
+            # Done
+            saved = session.get("saved_count", 0)
+            del self.recurring_sessions[user_id]
+            await self._retry_request(
+                context.bot.send_message if update.callback_query else update.message.reply_text,
+                chat_id=self.chat_id,
+                text=f"✅ *Proceso Finalizado*\nSe registraron {saved} gastos fijos.",
+                parse_mode='Markdown'
+            )
+            return
+
+        item = queue[idx]
+        msg = (
+            f"📅 *Gasto Fijo {idx + 1}/{len(queue)}*\n"
+            f"🏷️ {escape_md(item['name'])}\n"
+            f"💵 ${item['amount']:,.2f}\n"
+            f"📁 {escape_md(item['category'])}\n\n"
+            f"¿Registrar?"
+        )
+        
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Sí, Registrar", callback_data="REC|YES"),
+                InlineKeyboardButton("✏️ Editar Valor", callback_data="REC|EDIT"),
+            ],
+            [
+                InlineKeyboardButton("⏭️ Saltar", callback_data="REC|SKIP"),
+                InlineKeyboardButton("❌ Cancelar Todo", callback_data="REC|CANCEL"),
+            ]
+        ]
+        
+        # Send new message or edit
+        if update.callback_query:
+            await update.callback_query.edit_message_text(text=msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+        else:
+             await self._retry_request(update.message.reply_text, text=msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+
+    async def _process_recurring_item_save(self, update, context, user_id):
+        session = self.recurring_sessions[user_id]
+        idx = session["index"]
+        item = session["queue"][idx]
+        
+        if self.loader:
+            # Construct transaction dict
+            from datetime import datetime
+            t_data = {
+                "date": datetime.now().strftime("%d/%m/%Y %H:%M"), # Loader will adjust to COL time
+                "amount": item["amount"],
+                "merchant": item["name"] # Description
+            }
+            
+            success = self.loader.append_transaction(
+                t_data, 
+                category=item["category"], 
+                scope=item["scope"], 
+                user_who_paid=item["owner"], 
+                transaction_type="Gasto" # Assume fixed are expenses? Or check category/pocket logic? Defaults to Gasto.
+            )
+            
+            if success:
+                session["saved_count"] += 1
+            else:
+                await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text=f"⚠️ Error guardando {item['name']}")
+        
+        # Move next
+        session["index"] += 1
+        self.recurring_sessions[user_id] = session
+        await self._show_next_recurring_item(update, context, user_id)
+
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages (for manual flow or split flow)."""
@@ -127,6 +225,28 @@ class TransactionsBot:
                     await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n\nAhora ingresa una *Descripción* (tienda, concepto, etc):", parse_mode='Markdown')
                 except ValueError:
                     await self._retry_request(update.message.reply_text, "❌ Número inválido. Intenta de nuevo (ej: 15000 o 15k).")
+                return
+
+                return
+            
+            elif status == "RECURRING_WAITING_AMOUNT":
+                try:
+                    text = update.message.text.replace(',', '').replace('$', '').strip()
+                    if text.lower().endswith('k'):
+                        amount = float(text.lower().replace('k', '')) * 1000
+                    else:
+                        amount = float(text)
+                    
+                    # Update current item
+                    current_idx = session["index"]
+                    queue = session["queue"]
+                    queue[current_idx]["amount"] = amount
+                    
+                    # Save and Next
+                    await self._process_recurring_item_save(update, context, user_id)
+                    
+                except ValueError:
+                    await self._retry_request(update.message.reply_text, "❌ Número inválido. Intenta de nuevo.")
                 return
 
             elif status == "MANUAL_WAITING_DESC":
@@ -479,9 +599,56 @@ class TransactionsBot:
                      future = self.pending_futures[message_id]
                      if not future.done():
                          future.set_result(splits)
-                         del self.pending_futures[message_id]
                 
-                # Success Msg
+                # Cleanup
+                if message_id in self.flow_data:
+                    del self.flow_data[message_id]
+            
+            elif action == "CANCEL":
+                 if message_id in self.pending_futures:
+                     future = self.pending_futures[message_id]
+                     if not future.done():
+                         future.set_result(None) # Cancel
+                 if message_id in self.flow_data:
+                    del self.flow_data[message_id]
+                 await query.edit_message_text(text="❌ Operación cancelada.")
+
+        # --- 6. Recurring Flow Callbacks ---
+        elif step == "REC":
+            user_id = query.from_user.id
+            if user_id not in self.recurring_sessions:
+                await query.edit_message_text(text="⚠️ Sesión recurrente expirada.")
+                return
+
+            session = self.recurring_sessions[user_id]
+            action = value
+            
+            if action == "YES":
+                # Save current and move next
+                await self._process_recurring_item_save(update, context, user_id)
+            
+            elif action == "EDIT":
+                # Ask for new amount
+                session["status"] = "RECURRING_WAITING_AMOUNT"
+                self.recurring_sessions[user_id] = session
+                
+                idx = session["index"]
+                item = session["queue"][idx]
+                
+                await query.edit_message_text(
+                    text=f"✏️ Ingresa el nuevo valor para *{escape_md(item['name'])}*:",
+                    parse_mode='Markdown'
+                )
+            
+            elif action == "SKIP":
+                # Just inc index and show next
+                session["index"] += 1
+                self.recurring_sessions[user_id] = session
+                await self._show_next_recurring_item(update, context, user_id)
+            
+            elif action == "CANCEL":
+                del self.recurring_sessions[user_id]
+                await query.edit_message_text(text="❌ Proceso de fijos cancelado.")
                 msg = "✅ *Registro Exitoso*\n"
                 
                 # Fetch accumulated totals
