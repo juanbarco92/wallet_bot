@@ -426,7 +426,11 @@ class TransactionsBot:
 
         # Recovery/Check
         if message_id not in self.flow_data and step != "VALID":
-             await query.edit_message_text(text="⚠️ Sesión expirada. Intenta de nuevo.")
+             from telegram.error import BadRequest
+             try:
+                 await query.edit_message_text(text="⚠️ Sesión expirada. Intenta de nuevo.")
+             except BadRequest:
+                 pass # Already expired text
              return
 
         if step == "VALID":
