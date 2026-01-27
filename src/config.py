@@ -75,6 +75,7 @@ PERSONAL_CATEGORIES = {
 
 # Wrapper for access
 CATEGORIES_CONFIG = {
+    "Familiar": FAMILIAR_CATEGORIES,
     "Personal": PERSONAL_CATEGORIES
 }
 
