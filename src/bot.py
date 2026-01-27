@@ -202,6 +202,7 @@ class TransactionsBot:
             # is only for the SPLIT logic (which already has a scope in state).
             
             # Reply with SCOPE selection for this split
+            # Reply with SCOPE selection for this split
             keyboard = [
                 [
                     InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
@@ -216,6 +217,7 @@ class TransactionsBot:
                     text=f"Monto asignado: ${amount_input:,.2f}. ¿Es Familiar o Personal?",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
+
             except Exception as e:
                 logger.error(f"Failed to edit message {target_message_id}: {e}")
                 await self._retry_request(update.message.reply_text, f"Monto asignado: ${amount_input:,.2f}. Selecciona categoría abajo.", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -344,17 +346,31 @@ class TransactionsBot:
             is_multiple = (value == "Yes")
             self.flow_data[message_id]["is_multiple"] = is_multiple
             
-            # Step 3: Scope
-            keyboard = [
-                [
-                    InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
-                    InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+            if is_multiple:
+                # SKIP Global Scope. Go straight to splitting.
+                # Initialize logic for first split
+                total = self.flow_data[message_id]["total_amount"]
+                self.flow_data[message_id]["remaining_amount"] = total
+                self.flow_data[message_id]["splits"] = [] # Clear splits if any
+                
+                self.flow_data[message_id]["status"] = "WAITING_AMOUNT"
+                
+                await query.edit_message_text(
+                    text=f"Total: ${total:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para el primer gasto.",
+                    parse_mode='Markdown'
+                )
+            else:
+                # Step 3: Scope (Global for Single)
+                keyboard = [
+                    [
+                        InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
+                        InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                    ]
                 ]
-            ]
-            await query.edit_message_text(
-                text=f"¿Es un gasto 🏠 Familiar o 👤 Personal?",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
+                await query.edit_message_text(
+                    text=f"¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
 
 
 
