@@ -237,6 +237,80 @@ class SheetsLoader:
             print(f"Error calculating accumulation: {e}")
             return 0.0
 
+    def get_recurring_expenses(self) -> Dict[int, List[Dict]]:
+        """
+        Fetches recurring expenses configuration from 'Config_Fijos' sheet.
+        Returns a dict keyed by chat_id: {chat_id: [{name, amount, category, scope, owner}, ...]}
+        """
+        if not self.client:
+            return {}
+
+        try:
+            if not self.sheet:
+                # Open main spreadsheet first if needed (though usually init opens it?)
+                # Wait, init doesn't open it. append_transaction does.
+                # Let's ensure we get the spreadsheet.
+                sh = self.client.open_by_key(self.sheet_id)
+            else:
+                 # If self.sheet is set, it's a Worksheet object. We need the Spreadsheet object.
+                 sh = self.sheet.spreadsheet
+
+            try:
+                ws = sh.worksheet("Config_Fijos")
+            except gspread.WorksheetNotFound:
+                print("Sheet 'Config_Fijos' not found. Creating TEMPLATE...")
+                ws = sh.add_worksheet(title="Config_Fijos", rows=100, cols=10)
+                # Header
+                ws.append_row(["Chat ID", "Nombre Gasto", "Monto", "Categoría", "Scope", "Dueño (User)"], value_input_option='USER_ENTERED')
+                # Example
+                ws.append_row(["123456789", "Netflix", "50000", "Entretenimiento", "Personal", "Juanma"], value_input_option='USER_ENTERED')
+                return {}
+
+            records = ws.get_all_records()
+            
+            recurring_map = {}
+            
+            for row in records:
+                try:
+                    # Clean keys
+                    r = {k.strip().lower(): v for k, v in row.items()}
+                    
+                    chat_id_val = str(r.get("chat id", "")).strip()
+                    if not chat_id_val: 
+                        continue
+                    
+                    chat_id = int(chat_id_val)
+                    
+                    # Parse Amount
+                    raw_amt = r.get("monto", 0)
+                    if isinstance(raw_amt, (int, float)):
+                        amount = float(raw_amt)
+                    else:
+                        amount = float(str(raw_amt).replace(',', '').replace('$', '').strip() or 0)
+
+                    item = {
+                        "name": str(r.get("nombre gasto") or "").strip(),
+                        "amount": amount,
+                        "category": str(r.get("categoría") or r.get("categoria") or "").strip(),
+                        "scope": str(r.get("scope") or "Personal").strip(),
+                        "owner": str(r.get("dueño (user)") or r.get("dueño") or "User").strip()
+                    }
+                    
+                    if chat_id not in recurring_map:
+                        recurring_map[chat_id] = []
+                    
+                    recurring_map[chat_id].append(item)
+                    
+                except Exception as ex:
+                    print(f"Skipping invalid recurring row: {row} - {ex}")
+                    continue
+            
+            return recurring_map
+
+        except Exception as e:
+            print(f"Error fetching recurring expenses: {e}")
+            return {}
+
 if __name__ == "__main__":
     # Test
     loader = SheetsLoader()
