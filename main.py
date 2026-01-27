@@ -88,7 +88,7 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
                     # 3. Classify / Human-in-the-Loop
                     # We pass routing info to bot
                     logger.info(f"Asking {target_user} about transaction: {transaction}")
-                    splits = await current_bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
+                    splits, message_id = await current_bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
                     
                     if not splits:
                         logger.info("Transaction ignored or skipped by user.")
