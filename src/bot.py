@@ -356,28 +356,7 @@ class TransactionsBot:
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
 
-        elif step == "SCOPE":
-            self.flow_data[message_id]["scope"] = value
-            is_multiple = self.flow_data[message_id].get("is_multiple", False)
-            scope = value
-            
-            if is_multiple:
-                total = self.flow_data[message_id]["total_amount"]
-                remaining = self.flow_data[message_id]["remaining_amount"]
-                
-                self.flow_data[message_id]["status"] = "WAITING_AMOUNT"
-                
-                await query.edit_message_text(
-                    text=f"Total: ${total:,.2f}\nRestante por asignar: ${remaining:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para la primera categoría.",
-                    parse_mode='Markdown'
-                )
-            else:
-                # Single transaction, scope is set, now ask for category
-                keyboard = self._get_category_keyboard(scope)
-                await query.edit_message_text(
-                    text="Selecciona la categoría:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
-                )
+
 
         elif step == "SCOPE":
             is_multiple = self.flow_data[message_id].get("is_multiple", False)
