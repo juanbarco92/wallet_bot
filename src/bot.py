@@ -550,26 +550,16 @@ class TransactionsBot:
 
             else:
                  # Step 2: Multiple vs Single (VALID|Yes case)
-            if message_id not in self.flow_data:
-                # Should have been created. If not, maybe restart?
-                self.flow_data[message_id] = {
-                    "total_amount": 0.0, # Unknown if not tracked
-                    "remaining_amount": 0.0,
-                    "splits": [],
-                    "scope": "Personal"
-                }
+                 if message_id not in self.flow_data:
+                     # Should have been created. If not, maybe restart?
+                     self.flow_data[message_id] = {
+                         "total_amount": 0.0, # Unknown if not tracked
+                         "remaining_amount": 0.0,
+                         "splits": [],
+                         "scope": "Personal",
+                         "status": "PROCESSING"
+                     }
 
-            if value == "No":
-                 if message_id in self.pending_futures:
-                     future = self.pending_futures[message_id]
-                     if not future.done():
-                         future.set_result([]) 
-                         del self.pending_futures[message_id]
-                 if message_id in self.flow_data:
-                     del self.flow_data[message_id]
-                 await query.edit_message_text(text="❌ Transacción descartada.")
-            else:
-                 # Step 2: Multiple vs Single
                  keyboard = [
                     [
                         InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
