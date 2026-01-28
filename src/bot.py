@@ -499,6 +499,58 @@ class TransactionsBot:
         if step == "VALID":
             # Ensure state exists (it should from ask_user)
             if message_id not in self.flow_data:
+                # Should have been created.
+                 pass
+
+            if value == "No":
+                 # Cancel logic
+                 if message_id in self.pending_futures:
+                     future = self.pending_futures[message_id]
+                     if not future.done():
+                         future.set_result([]) 
+                         del self.pending_futures[message_id]
+                 if message_id in self.flow_data:
+                     del self.flow_data[message_id]
+                 await query.edit_message_text(text="❌ Transacción descartada.")
+            
+            elif value == "RESTART":
+                 # Restart Logic
+                 if message_id in self.pending_futures:
+                     # We can't easily "restart" the future without re-triggering the whole flow.
+                     # Best we can do is cancel current and tell user to resend?
+                     # OR: clear splits, reset amounts, go back to VALID?
+                     # Actually, "Reiniciar" usually means "Start from scratch".
+                     pass
+                 
+                 # Reset Internal State
+                 if message_id in self.flow_data:
+                     self.flow_data[message_id]["splits"] = []
+                     self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
+                     self.flow_data[message_id]["status"] = "INIT"
+                 
+                 # Go back to Step 1
+                 keyboard = [
+                    [
+                        InlineKeyboardButton("✅ Sí, es correcto", callback_data="VALID|Yes"),
+                        InlineKeyboardButton("❌ No, cancelar", callback_data="VALID|No"),
+                    ],
+                    [
+                         InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART") # Re-use VALID for convenience or new step?
+                         # Actually if I added it to keyboards, I need to handle it.
+                    ]
+                 ]
+                 # Wait, if I want to restart, I should probably just re-ask the first question.
+                 # "Is this transaction correct?"
+                 
+                 await query.edit_message_text(
+                     text=f"🔄 *Reinicio*\n\n¿Es correcta esta transacción?\nMerchant: {self.flow_data[message_id].get('merchant')}\nMonto: {self.flow_data[message_id].get('total_amount')}",
+                     reply_markup=InlineKeyboardMarkup(keyboard),
+                     parse_mode='Markdown'
+                 )
+
+            else:
+                 # Step 2: Multiple vs Single (VALID|Yes case)
+            if message_id not in self.flow_data:
                 # Should have been created. If not, maybe restart?
                 self.flow_data[message_id] = {
                     "total_amount": 0.0, # Unknown if not tracked
