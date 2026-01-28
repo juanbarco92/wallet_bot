@@ -121,9 +121,9 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
                                 # Append details and accumulation
                                 for category, scope, split_amount, user_who_paid, tx_type in splits:
                                      try:
-                                         # Optimistic accumulation: Fetch previous + current
+                                         # Optimistic accumulation REMOVED: Sheets is fast enough.
                                          accumulated = loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
-                                         accumulated += split_amount
+                                         # accumulated += split_amount
                                          msg_text += f"\n• *{category}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
                                      except Exception as exc:
                                          logger.error(f"Error calculating accumulation for UI: {exc}")

@@ -409,10 +409,9 @@ class TransactionsBot:
                         # But `append_row` vs `get_all_records` consistency...
                         # Let's assume we need to manually add if the loader doesn't guarantee instant visibility.
                         # Or better: Just show "Acumulado a la fecha".
-                        accumulated = prev_total # + amount? Let's check logic in recurring flow.
-                        # Recurring flow did: accumulated = self.loader... then accumulated += amt.
-                        # So I will do the same: optimistic addition.
-                        accumulated += amount
+                        # Optimistic addition REMOVED: Sheets is fast enough.
+                        # accumulated += amount
+                        pass
                         
                     msg_text += f"• *{escape_md(category)}*: ${amount:,.2f}\n"
                     msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
