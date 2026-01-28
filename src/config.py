@@ -57,7 +57,8 @@ PERSONAL_CATEGORIES = {
     "💰 Ahorro/Inversion": [
         "CREA Emma",
         "CREA Benja",
-        "AFP"
+        "AFP",
+        "[Bolsillo] Retefuente"
     ],
     "👨‍👩‍👧‍👦 Familia": [
         "Mama",
