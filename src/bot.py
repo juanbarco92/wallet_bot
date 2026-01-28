@@ -100,6 +100,8 @@ class TransactionsBot:
             "status": "MANUAL_WAITING_AMOUNT",
             "data": {}
         }
+        
+        await update.message.reply_text("📝 *Nueva Transacción Manual*\n\nPor favor ingresa el *Monto* de la transacción:\n(Ej: 50000)", parse_mode='Markdown')
     async def start_recurring_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Starts the flow to confirm recurring expenses."""
         user_id = update.effective_user.id
