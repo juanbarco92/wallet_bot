@@ -100,15 +100,7 @@ class SheetsLoader:
             print(f"Error appending to sheet: {e}")
             return False
 
-    def get_accumulated_total(self, category_name: str, scope: str, transaction_type: str) -> float:
-        """
-        Calculates the accumulated total for a category since the 25th of the previous cycle.
-        Cycle Rule:
-        - If today >= 25: Start Date is 25th of THIS month.
-        - If today < 25: Start Date is 25th of PREVIOUS month.
-        """
-        if not self.client:
-            return 0.0
+
 
     def get_accumulated_total(self, category_name: str, scope: str, transaction_type: str, user: str = None) -> float:
         """

@@ -527,22 +527,30 @@ class TransactionsBot:
                      self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
                      self.flow_data[message_id]["status"] = "INIT"
                  
-                 # Go back to Step 1
+                 # Go back to Step 1 (Initial Alert)
                  keyboard = [
                     [
-                        InlineKeyboardButton("✅ Sí, es correcto", callback_data="VALID|Yes"),
-                        InlineKeyboardButton("❌ No, cancelar", callback_data="VALID|No"),
-                    ],
-                    [
-                         InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART") # Re-use VALID for convenience or new step?
-                         # Actually if I added it to keyboards, I need to handle it.
+                        InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                        InlineKeyboardButton("❌ No Registrar", callback_data="VALID|No"),
                     ]
                  ]
-                 # Wait, if I want to restart, I should probably just re-ask the first question.
-                 # "Is this transaction correct?"
+                 
+                 # Reconstruct original text
+                 merchant = self.flow_data[message_id].get('merchant', 'Desconocido')
+                 amount = self.flow_data[message_id].get("total_amount", 0.0)
+                 date = self.flow_data[message_id].get("date", "?")
+                 user = self.flow_data[message_id].get("user_name", "User")
+
+                 text = (
+                    f"💰 *Nueva Transacción Detectada* ({escape_md(user)})\n"
+                    f"🛒 {escape_md(merchant)}\n"
+                    f"💵 ${amount:,.2f}\n"
+                    f"📅 {escape_md(date)}\n\n"
+                    f"¿Deseas registrarla?"
+                )
                  
                  await query.edit_message_text(
-                     text=f"🔄 *Reinicio*\n\n¿Es correcta esta transacción?\nMerchant: {self.flow_data[message_id].get('merchant')}\nMonto: {self.flow_data[message_id].get('total_amount')}",
+                     text=text,
                      reply_markup=InlineKeyboardMarkup(keyboard),
                      parse_mode='Markdown'
                  )
@@ -1014,7 +1022,11 @@ class TransactionsBot:
             "remaining_amount": total,
             "splits": [],
             "scope": "Personal",
-            "status": "INIT"
+            "status": "INIT",
+            # Store metadata for Restart context
+            "merchant": transaction.get('merchant', 'Desconocido'),
+            "date": transaction.get('date', '?'),
+            "user_name": user_name
         }
 
         print(f"Waiting for input on message {message.message_id}...")
