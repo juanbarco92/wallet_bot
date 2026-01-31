@@ -514,18 +514,15 @@ class TransactionsBot:
             
             elif value == "RESTART":
                  # Restart Logic
-                 if message_id in self.pending_futures:
-                     # We can't easily "restart" the future without re-triggering the whole flow.
-                     # Best we can do is cancel current and tell user to resend?
-                     # OR: clear splits, reset amounts, go back to VALID?
-                     # Actually, "Reiniciar" usually means "Start from scratch".
-                     pass
-                 
+                 if message_id not in self.flow_data:
+                     # Check if we can recover? No, we lost the merchant/amount info.
+                     await query.edit_message_text(text="⚠️ Sesión expirada. No se puede reiniciar.")
+                     return
+
                  # Reset Internal State
-                 if message_id in self.flow_data:
-                     self.flow_data[message_id]["splits"] = []
-                     self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
-                     self.flow_data[message_id]["status"] = "INIT"
+                 self.flow_data[message_id]["splits"] = []
+                 self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
+                 self.flow_data[message_id]["status"] = "INIT"
                  
                  # Go back to Step 1 (Initial Alert)
                  keyboard = [
