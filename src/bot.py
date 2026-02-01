@@ -456,6 +456,9 @@ class TransactionsBot:
                 row = []
         if row:
             keyboard.append(row)
+        
+        # Add Restart/Cancel options
+        keyboard.append([InlineKeyboardButton("🔄 Reiniciar", callback_data="CAT|RESTART")])
         return keyboard
 
     def _get_subcategory_keyboard(self, category, scope="Personal"):
@@ -471,6 +474,9 @@ class TransactionsBot:
                 row = []
         if row:
             keyboard.append(row)
+            
+        # Add Restart/Cancel options
+        keyboard.append([InlineKeyboardButton("🔄 Reiniciar", callback_data="SUBCAT|RESTART")])
         return keyboard
 
     async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -485,6 +491,7 @@ class TransactionsBot:
             return
 
         step, value = data.split("|", 1)
+        print(f"DEBUG FLOW: Recv Data={data} -> Step={step}, Value={value}")
 
         # Recovery/Check
         if message_id not in self.flow_data and step != "VALID":
@@ -494,6 +501,17 @@ class TransactionsBot:
              except BadRequest:
                  pass # Already expired text
              return
+
+        if step == "VALID" or value == "RESTART": 
+             # Handle RESTART globally or specific cases
+             pass
+
+        # Global Redirect for RESTART from any step
+        if value == "RESTART":
+            print("DEBUG FLOW: Redirecting RESTART to VALID step")
+            # Trick: Treat it as was a VALID|RESTART action
+            step = "VALID"
+            # (The existing logic for VALID|RESTART will catch it below)
 
         if step == "VALID":
             # Ensure state exists (it should from ask_user)
@@ -515,8 +533,10 @@ class TransactionsBot:
             elif value == "RESTART":
                  # Restart Logic
                  if message_id not in self.flow_data:
-                     # Check if we can recover? No, we lost the merchant/amount info.
-                     await query.edit_message_text(text="⚠️ Sesión expirada. No se puede reiniciar.")
+                     try:
+                        await query.edit_message_text(text="⚠️ Sesión expirada. No se puede reiniciar.")
+                     except:
+                        pass
                      return
 
                  # Reset Internal State
@@ -538,8 +558,11 @@ class TransactionsBot:
                  date = self.flow_data[message_id].get("date", "?")
                  user = self.flow_data[message_id].get("user_name", "User")
 
+                 # We add a small visual cue that it restarted (timestamp or icon change)
+                 import time
                  text = (
-                    f"💰 *Nueva Transacción Detectada* ({escape_md(user)})\n"
+                    f"💰 *Nueva Transacción* (Reiniciada 🔄)\n"
+                    f"👤 {escape_md(user)}\n"
                     f"🛒 {escape_md(merchant)}\n"
                     f"💵 ${amount:,.2f}\n"
                     f"📅 {escape_md(date)}\n\n"
@@ -712,6 +735,7 @@ class TransactionsBot:
                      future = self.pending_futures[message_id]
                      if not future.done():
                          future.set_result(splits)
+                         del self.pending_futures[message_id]
                 
                 # Feedback to User
                 try:
@@ -827,7 +851,7 @@ class TransactionsBot:
         keyboard = [
             [
                 InlineKeyboardButton("✅ Guardar", callback_data="CONFIRM|SAVE"),
-                InlineKeyboardButton("🔄 Reiniciar", callback_data="CONFIRM|RETRY"),
+                InlineKeyboardButton("🔄 Reiniciar", callback_data="CONFIRM|RESTART"),
             ]
         ]
         await query.edit_message_text(
