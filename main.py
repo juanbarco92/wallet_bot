@@ -17,6 +17,108 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader, processing_emails: set):
+    email_id = email_data['id']
+    try:
+        logger.info(f"Processing email {email_id}")
+        
+        # 1. Detect Source & Routing
+        original_sender, target_user, chat_id_key = detect_original_source(email_data)
+        logger.info(f"Detected Source: {original_sender} | Target: {target_user} ({chat_id_key})")
+        
+        target_chat_id = None
+        if chat_id_key:
+            cid_str = os.getenv(chat_id_key)
+            if cid_str:
+                target_chat_id = int(cid_str)
+        
+        # Select the correct bot
+        current_bot = bots.get(target_user)
+        if not current_bot:
+            logger.warning(f"No specific bot found for {target_user}. Falling back to Juanma.")
+            current_bot = bots.get("Juanma")
+        
+        # 2. Parse
+        # Prefer body, fallback to snippet
+        text_to_parse = email_data.get('body') or email_data.get('snippet', '')
+        transaction = parser.parse(text_to_parse)
+        
+        if not transaction['amount'] and not transaction['merchant']:
+            logger.warning(f"Could not parse transaction from email {email_id}")
+            # Mark as read to avoid loop? Or skip?
+            # If we can't parse, maybe it's spam or irrelevant.
+            # For now, let's mark read so we don't get stuck.
+            gmail.mark_as_read(email_id)
+            return
+
+        # 3. Classify / Human-in-the-Loop
+        # We pass routing info to bot
+        logger.info(f"Asking {target_user} about transaction: {transaction}")
+        splits, message_id = await current_bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
+        
+        if not splits:
+            logger.info("Transaction ignored or skipped by user.")
+            gmail.mark_as_read(email_id)
+            return
+
+        logger.info(f"User confirmed splits: {splits}")
+
+        all_saved = True
+        for category, scope, split_amount, user_who_paid, tx_type in splits:
+             # Create a copy or modify amount
+             t_copy = transaction.copy()
+             t_copy['amount'] = split_amount
+             
+             success = loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
+             if not success:
+                 logger.error(f"Failed to save transaction split to Sheets: {t_copy}")
+                 all_saved = False
+        
+        # 5. Mark as read only if ALL saved successfully
+        if all_saved:
+            # Mark email as read
+            gmail.mark_as_read(email_id)
+            
+            # Update Telegram Message to Success
+            if message_id and current_bot and current_bot.application:
+                try:
+                    msg_text = "💾 *Guardado Exitoso* en Google Sheets."
+                    
+                    # Append details and accumulation
+                    for category, scope, split_amount, user_who_paid, tx_type in splits:
+                         try:
+                             # Optimistic accumulation REMOVED: Sheets is fast enough.
+                             accumulated = loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
+                             # accumulated += split_amount
+                             msg_text += f"\n• *{category}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
+                         except Exception as exc:
+                             logger.error(f"Error calculating accumulation for UI: {exc}")
+                             msg_text += f"\n• *{category}*: ${split_amount:,.2f}"
+
+                    await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                except Exception as e:
+                    logger.error(f"Failed to edit completion message: {e}")
+
+        else:
+            logger.warning(f"Skipping mark_as_read for email {email_id} due to save failure.")
+            # Notify user via Edit if possible
+            if current_bot and current_bot.application:
+                 err_text = f"⚠️ Error guardando transacción de {email_data.get('snippet', 'unknown')}. No se marcará como leído."
+                 try:
+                     if message_id:
+                         await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=err_text)
+                     else:
+                         await current_bot.application.bot.send_message(chat_id=current_bot.chat_id, text=err_text)
+                 except Exception as e:
+                     logger.error(f"Failed to edit error message: {e}")
+
+    except TokenExpiredError as e:
+        logger.error(f"Token naturally expired while processing email {email_id}: {e}")
+    except Exception as e:
+        logger.error(f"Error in process_email_task for email {email_id}: {e}")
+    finally:
+        processing_emails.discard(email_id)
+
 async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader):
     """
     Main ETL loop.
@@ -39,6 +141,8 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
         else:
             base_query = "" # risky, fetches all unread?
 
+        processing_emails = set()
+
         while True:
             logger.info("Checking for new emails...")
             try:
@@ -54,97 +158,16 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
                     raise e
                 
                 for email_data in emails:
-                    logger.info(f"Processing email {email_data['id']}")
-                    
-                    # 1. Detect Source & Routing
-                    original_sender, target_user, chat_id_key = detect_original_source(email_data)
-                    logger.info(f"Detected Source: {original_sender} | Target: {target_user} ({chat_id_key})")
-                    
-                    target_chat_id = None
-                    if chat_id_key:
-                        cid_str = os.getenv(chat_id_key)
-                        if cid_str:
-                            target_chat_id = int(cid_str)
-                    
-                    # Select the correct bot
-                    current_bot = bots.get(target_user)
-                    if not current_bot:
-                        logger.warning(f"No specific bot found for {target_user}. Falling back to Juanma.")
-                        current_bot = bots.get("Juanma")
-                    
-                    # 2. Parse
-                    # Prefer body, fallback to snippet
-                    text_to_parse = email_data.get('body') or email_data.get('snippet', '')
-                    transaction = parser.parse(text_to_parse)
-                    
-                    if not transaction['amount'] and not transaction['merchant']:
-                        logger.warning(f"Could not parse transaction from email {email_data['id']}")
-                        # Mark as read to avoid loop? Or skip?
-                        # If we can't parse, maybe it's spam or irrelevant.
-                        # For now, let's mark read so we don't get stuck.
-                        gmail.mark_as_read(email_data['id'])
+                    email_id = email_data['id']
+                    if email_id in processing_emails:
                         continue
-
-                    # 3. Classify / Human-in-the-Loop
-                    # We pass routing info to bot
-                    logger.info(f"Asking {target_user} about transaction: {transaction}")
-                    splits, message_id = await current_bot.ask_user_for_category(transaction, user_name=target_user, target_chat_id=target_chat_id)
-                    
-                    if not splits:
-                        logger.info("Transaction ignored or skipped by user.")
-                        gmail.mark_as_read(email_data['id'])
-                        continue
-
-                    logger.info(f"User confirmed splits: {splits}")
-
-                    all_saved = True
-                    for category, scope, split_amount, user_who_paid, tx_type in splits:
-                         # Create a copy or modify amount
-                         t_copy = transaction.copy()
-                         t_copy['amount'] = split_amount
-                         
-                         success = loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
-                         if not success:
-                             logger.error(f"Failed to save transaction split to Sheets: {t_copy}")
-                             all_saved = False
-                    
-                    # 5. Mark as read only if ALL saved successfully
-                    if all_saved:
-                        # Mark email as read
-                        gmail.mark_as_read(email_data['id'])
                         
-                        # Update Telegram Message to Success
-                        if message_id and current_bot and current_bot.application:
-                            try:
-                                msg_text = "💾 *Guardado Exitoso* en Google Sheets."
-                                
-                                # Append details and accumulation
-                                for category, scope, split_amount, user_who_paid, tx_type in splits:
-                                     try:
-                                         # Optimistic accumulation REMOVED: Sheets is fast enough.
-                                         accumulated = loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
-                                         # accumulated += split_amount
-                                         msg_text += f"\n• *{category}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
-                                     except Exception as exc:
-                                         logger.error(f"Error calculating accumulation for UI: {exc}")
-                                         msg_text += f"\n• *{category}*: ${split_amount:,.2f}"
-
-                                await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
-                            except Exception as e:
-                                logger.error(f"Failed to edit completion message: {e}")
-
-                    else:
-                        logger.warning(f"Skipping mark_as_read for email {email_data['id']} due to save failure.")
-                        # Notify user via Edit if possible
-                        if current_bot and current_bot.application:
-                             err_text = f"⚠️ Error guardando transacción de {email_data.get('snippet', 'unknown')}. No se marcará como leído."
-                             try:
-                                 if message_id:
-                                     await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=err_text)
-                                 else:
-                                     await current_bot.application.bot.send_message(chat_id=current_bot.chat_id, text=err_text)
-                             except Exception as e:
-                                 logger.error(f"Failed to edit error message: {e}")
+                    processing_emails.add(email_id)
+                    
+                    # Process each email independently
+                    asyncio.create_task(
+                        process_email_task(email_data, bots, gmail, parser, loader, processing_emails)
+                    )
             
             except TokenExpiredError as tee:
                 raise tee # Escalate to main handler
