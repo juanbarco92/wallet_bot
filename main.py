@@ -32,7 +32,7 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
         if WIFE_EMAIL not in senders:
             senders.append(WIFE_EMAIL)
 
-        # Construct query: "from:(s1 OR s2) is:unread newer_than:1d"
+        # Construct query: "from:(s1 OR s2) is:unread newer_than:3d"
         if senders:
             sender_query = " OR ".join(senders)
             base_query = f"from:({sender_query})"
@@ -43,7 +43,7 @@ async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, lo
             logger.info("Checking for new emails...")
             try:
                 # Use custom_query to combine sender + unread
-                full_query = f"{base_query} is:unread newer_than:1d" if base_query else "is:unread newer_than:1d"
+                full_query = f"{base_query} is:unread newer_than:3d" if base_query else "is:unread newer_than:3d"
                 
                 try:
                     emails = gmail.fetch_unread_emails(custom_query=full_query)
