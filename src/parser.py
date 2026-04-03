@@ -36,6 +36,7 @@ class TransactionParser:
             r"a la llave\s+(@?[\w\d]+)", # Covers QR and Transfers to Key
             r"Retiraste\s+[\d\.,\s\$]+en\s+(.*?)\s+de tu", # Withdrawals
             r"pago Factura Programada\s+(.*?)(?:\s+Ref|\s+por)", # Facturas Programadas
+            r"Le enviaste a\s+(.*?)(?:\s+en su cuenta|\s*$)", # Nubank Transfers
         ]
         
         # 3. Date Patterns
