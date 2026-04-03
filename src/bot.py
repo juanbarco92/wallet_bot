@@ -96,6 +96,37 @@ class TransactionsBot:
         user_id = update.effective_user.id
         self.chat_id = update.effective_chat.id
         
+        if context.args:
+            try:
+                amount_str = context.args[0].replace(',', '').replace('$', '')
+                if amount_str.lower().endswith('k'):
+                    amount = float(amount_str.lower().replace('k', '')) * 1000
+                else:
+                    amount = float(amount_str)
+                
+                if len(context.args) >= 2:
+                    desc = " ".join(context.args[1:]).strip()
+                    
+                    from datetime import datetime
+                    transaction_data = {
+                        "amount": amount,
+                        "merchant": desc,
+                        "date": datetime.now().strftime("%d/%m/%Y %H:%M")
+                    }
+                    
+                    await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n✅ Descripción: {desc}. Clasificando...", parse_mode='Markdown')
+                    asyncio.create_task(self.process_manual_transaction(transaction_data))
+                    return
+                else:
+                    self.manual_sessions[user_id] = {
+                        "status": "MANUAL_WAITING_DESC",
+                        "data": {"amount": amount}
+                    }
+                    await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n\nAhora ingresa una *Descripción* (tienda, concepto, etc):", parse_mode='Markdown')
+                    return
+            except ValueError:
+                pass
+        
         self.manual_sessions[user_id] = {
             "status": "MANUAL_WAITING_AMOUNT",
             "data": {}

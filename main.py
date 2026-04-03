@@ -2,6 +2,8 @@ import asyncio
 import os
 import logging
 import traceback
+from aiohttp import web
+from datetime import datetime
 from src.ingestion import GmailClient, TokenExpiredError, detect_original_source
 from src.parser import TransactionParser, Classifier
 from src.bot import TransactionsBot
@@ -118,6 +120,56 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
         logger.error(f"Error in process_email_task for email {email_id}: {e}")
     finally:
         processing_emails.discard(email_id)
+
+async def tasker_webhook_handler(request):
+    try:
+        data = await request.json()
+        secret = request.headers.get("Authorization")
+        
+        # Verify secret
+        if secret != os.getenv("TASKER_SECRET", "supersecreto"):
+            logger.warning(f"Unauthorized tasker ping with secret {secret}")
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        
+        amount = data.get("amount")
+        merchant = data.get("merchant")
+        
+        if amount is None or not merchant:
+            return web.json_response({"error": "Invalid payload, 'amount' and 'merchant' required"}, status=400)
+            
+        transaction_data = {
+            "amount": float(amount),
+            "merchant": str(merchant),
+            "date": datetime.now().strftime("%d/%m/%Y %H:%M")
+        }
+        
+        bot_juanma = request.app["bot_juanma"]
+        if not bot_juanma:
+            return web.json_response({"error": "Bot subsystem not ready"}, status=503)
+            
+        asyncio.create_task(bot_juanma.process_manual_transaction(transaction_data))
+        
+        return web.json_response({"status": "success", "message": "Transaction sent to bot", "data": transaction_data})
+        
+    except Exception as e:
+        logger.error(f"Error in tasker webhook: {e}")
+        return web.json_response({"error": str(e)}, status=500)
+
+async def start_web_server(bots):
+    app = web.Application()
+    app["bot_juanma"] = bots.get("Juanma")
+    app.router.add_post('/tasker', tasker_webhook_handler)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    try:
+        site = web.TCPSite(runner, '0.0.0.0', 8080)
+        await site.start()
+        logger.info("📡 Tasker Webhook listening on 0.0.0.0:8080")
+        return runner
+    except Exception as e:
+        logger.error(f"Failed to start Tasker Webhook on port 8080: {e}")
+        return None
 
 async def etl_loop(bots: dict, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader):
     """
@@ -241,7 +293,11 @@ async def main():
     
     logger.info("Services initialized. Starting ETL loop...")
     
+    webhook_runner = None
     try:
+        # Start Tasker Webhook
+        webhook_runner = await start_web_server(bots)
+
         # Run ETL loop
         await etl_loop(bots, gmail, parser, loader)
 
@@ -271,6 +327,13 @@ async def main():
             await bot_juanma.application.bot.send_message(chat_id=bot_juanma.chat_id, text=f"🔥 Fatal Startup Error: {e}")
     
     finally:
+        # Stop webhook
+        if webhook_runner:
+            try:
+                await webhook_runner.cleanup()
+            except Exception as e:
+                logger.error(f"Error cleaning up webhook runner: {e}")
+                
         # Stop all bots
         await bot_juanma.stop()
         if bot_leydi:
