@@ -133,9 +133,32 @@ async def tasker_webhook_handler(request):
         
         amount = data.get("amount")
         merchant = data.get("merchant")
+        texto = data.get("texto")
+        
+        if not amount and not merchant and texto:
+            parser = request.app.get("parser")
+            if parser:
+                try:
+                    parsed = parser.parse(str(texto))
+                    amount = parsed.get("amount")
+                    merchant = parsed.get("merchant")
+                except Exception as e:
+                    logger.warning(f"Error parsing raw texto with TransactionParser: {e}")
+            else:
+                try:
+                    parts = str(texto).strip().split(" ", 1)
+                    if len(parts) >= 2:
+                        amount_str = parts[0].replace(',', '').replace('$', '')
+                        if amount_str.lower().endswith('k'):
+                            amount = float(amount_str.lower().replace('k', '')) * 1000
+                        else:
+                            amount = float(amount_str)
+                        merchant = parts[1]
+                except Exception as e:
+                    logger.warning(f"Error parsing fallback raw texto: {e}")
         
         if amount is None or not merchant:
-            return web.json_response({"error": "Invalid payload, 'amount' and 'merchant' required"}, status=400)
+            return web.json_response({"error": "Invalid payload, 'amount' and 'merchant' required, or valid 'texto'"}, status=400)
             
         transaction_data = {
             "amount": float(amount),
@@ -155,9 +178,10 @@ async def tasker_webhook_handler(request):
         logger.error(f"Error in tasker webhook: {e}")
         return web.json_response({"error": str(e)}, status=500)
 
-async def start_web_server(bots):
+async def start_web_server(bots, parser=None):
     app = web.Application()
     app["bot_juanma"] = bots.get("Juanma")
+    app["parser"] = parser
     app.router.add_post('/tasker', tasker_webhook_handler)
     
     runner = web.AppRunner(app)
@@ -296,7 +320,7 @@ async def main():
     webhook_runner = None
     try:
         # Start Tasker Webhook
-        webhook_runner = await start_web_server(bots)
+        webhook_runner = await start_web_server(bots, parser)
 
         # Run ETL loop
         await etl_loop(bots, gmail, parser, loader)
