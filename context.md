@@ -18,6 +18,7 @@
    - Email forwarding (e.g. from Outlook/Hotmail to Gmail) often inserts carriage returns (`\r\n`). All regex patterns (amounts, merchant, and dates) are case-insensitive and support whitespace matching (`\s+`, `\r?\n`) to handle these characters properly.
    - Date regex supports matching and normalizing `YYYY/MM/DD` date formats inside transfers.
    - Supports Glim transaction emails (sender `no-responder@getglim.com`) using a specific pattern to match the merchant before general fallback rules are processed: `r"tarjeta de beneficios Glim.*?en\s+(.*?)(?:\.|$)"`.
+  - **Tasker Webhook Configuration:** To ensure both transaction amount and merchant are parsed correctly, the Tasker webhook HTTP POST body must concatenate `%evtprm2` (Title, containing the amount) and `%evtprm3` (Text, containing the merchant) like: `{"texto": "%evtprm2 %evtprm3"}`.
 4. **Google Cloud Logging Integration (`main.py`):**
    - Integrates with `google-cloud-logging` to stream logs directly to GCP Cloud Logging. This consumes 0 bytes of the VM's local 30GB persistent disk.
    - In case of warning scenarios (e.g. `merchant == 'UNKNOWN'` or `amount == 0.0`), the system logs a `logger.warning` containing the Gmail message ID, sender, subject, and the entire MIME-decoded body, making troubleshooting via Log Explorer simple.

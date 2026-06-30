@@ -1,0 +1,2805 @@
+[
+  {
+    "insertId": "4rjmzdek8i4t",
+    "jsonPayload": {
+      "code": "LogPingOpsAgent"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:38.534170885Z",
+    "severity": "DEBUG",
+    "labels": {
+      "agent.googleapis.com/health/schemaVersion": "v1",
+      "agent.googleapis.com/health/agentVersion": "2.62.0",
+      "agent.googleapis.com/health/agentKind": "ops-agent"
+    },
+    "logName": "projects/autotrx-481014/logs/ops-agent-health",
+    "receiveTimestamp": "2026-06-30T02:36:39.571061941Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve3",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.704389+00:00 instance-20251217-175237 systemd[1]: Starting apt-news.service - Update APT News..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.709753323Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve4",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.716135+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727944708Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve5",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.716745+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727952564Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve6",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.716951+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727955054Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve7",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717123+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727957350Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve8",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717268+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727959270Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ve9",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717381+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727961137Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vea",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717511+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727962949Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8veb",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717632+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727964780Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vec",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717772+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727967129Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ved",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717830+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727969173Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vee",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717885+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727971236Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vef",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717944+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727973072Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8veg",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.717998+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727975013Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8veh",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718114+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727976825Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vei",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718179+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727978618Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vej",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718251+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727980565Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vek",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718305+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727982155Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vel",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718380+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727983923Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vem",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718473+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727986913Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ven",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.718807+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727988717Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8veo",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.719018+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), next retry is Tue Jun 30 02:37:29 2026, retry nbr 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.727990672Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8vep",
+    "jsonPayload": {
+      "message": "2026-06-30T02:36:59.741901+00:00 instance-20251217-175237 systemd[1]: Starting esm-cache.service - Update the local ESM caches..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:36:59.745715613Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8veq",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:00.222449+00:00 instance-20251217-175237 systemd[1]: apt-news.service: Deactivated successfully."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:00.223232280Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ver",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:00.222746+00:00 instance-20251217-175237 systemd[1]: Finished apt-news.service - Update APT News."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:00.223237515Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "6yani1f1a8ves",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:00.243234+00:00 instance-20251217-175237 systemd[1]: Starting gce-workload-cert-refresh.service - GCE Workload Certificate refresh..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:00.243662818Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:00.569680358Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awn",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:00.748173+00:00 instance-20251217-175237 gce_workload_cert_refresh[2291279]: 2026/06/30 02:37:00: Done"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:00.748780262Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awo",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:00.752263+00:00 instance-20251217-175237 systemd[1]: gce-workload-cert-refresh.service: Deactivated successfully."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:00.753626106Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awp",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:00.752509+00:00 instance-20251217-175237 systemd[1]: Finished gce-workload-cert-refresh.service - GCE Workload Certificate refresh."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:00.753631399Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awq",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.049904+00:00 instance-20251217-175237 dbus-daemon[569]: [system] Activating via systemd: service name='org.freedesktop.PackageKit' unit='packagekit.service' requested by ':1.45306' (uid=0 pid=2291460 comm=\"/usr/bin/gdbus call --system --dest org.freedeskto\" label=\"unconfined\")"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.051794753Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awr",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.064268+00:00 instance-20251217-175237 systemd[1]: Starting packagekit.service - PackageKit Daemon..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.064755630Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2aws",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.116731+00:00 instance-20251217-175237 PackageKit: daemon start"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.117003708Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awt",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.239711+00:00 instance-20251217-175237 systemd[1]: esm-cache.service: Deactivated successfully."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.240006075Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awu",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.240320+00:00 instance-20251217-175237 systemd[1]: Finished esm-cache.service - Update the local ESM caches."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.242719093Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2awv",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.251954+00:00 instance-20251217-175237 dbus-daemon[569]: [system] Successfully activated service 'org.freedesktop.PackageKit'"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.252770392Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "3w4awbf4n2aww",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:01.252144+00:00 instance-20251217-175237 systemd[1]: Started packagekit.service - PackageKit Daemon."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:01.252786752Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:01.562253086Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzn",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:25.842376+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:25,841 - aiohttp.access - INFO - 186.154.35.136 [30/Jun/2026:02:36:12 +0000] \"POST /tasker HTTP/1.1\" 200 295 \"-\" \"Tasker/6.6.20 (Android/16)\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:25.842958515Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzo",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:25.846846+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:25,841 - src.bot - INFO - Processing manual transaction: {'amount': 0.0, 'merchant': 'UNKNOWN', 'date': '30/06/2026 02:37'}"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:25.847305504Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzp",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:25.847191+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:25,846 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:25.848417687Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzq",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:25.847926+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:25,847 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:25.848422144Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzr",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:25.849075+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:25,848 - __main__ - INFO - Checking for new emails..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:25.849405121Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzs",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:25.849249+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:25,849 - src.ingestion - INFO - Fetching latest 1 emails with query: from:(alertasynotificaciones@an.notificacionesbancolombia.com OR noreply@rappicard.co OR lejom_0721@hotmail.com) is:unread newer_than:3d"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:25.849409092Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzt",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:26.269944+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:26,269 - src.ingestion - INFO - Fetched 1 emails."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:26.271388744Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzu",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:26.274745+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:26,274 - aiohttp.access - INFO - 62.210.142.148 [30/Jun/2026:02:37:26 +0000] \"UNKNOWN / HTTP/1.0\" 400 214 \"-\" \"-\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:26.275238669Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1ulhy3wf1mwvzv",
+    "jsonPayload": {
+      "message": "2026-06-30T02:37:26.276049+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:37:26,275 - aiohttp.access - INFO - 62.210.142.148 [30/Jun/2026:02:37:26 +0000] \"GET / HTTP/1.1\" 404 174 \"-\" \"Mozilla/5.0 (compatible; GenomeCrawlerd/1.0; +https://www.nokia.com/genomecrawler)\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:37:26.276713749Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:37:26.562681458Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bo",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.476143+00:00 instance-20251217-175237 systemd[1]: Starting sysstat-collect.service - system activity accounting tool..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.478035349Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bp",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.478946+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515164446Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bq",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.479314+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515172383Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1br",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.479779+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515175111Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bs",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.479919+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515177013Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bt",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480044+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515178621Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bu",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480257+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515179466Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bv",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480369+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515180891Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bw",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480425+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515182703Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bx",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480500+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515184713Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1by",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480584+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515186386Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1bz",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480647+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515188135Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c0",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480703+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515189861Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c1",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480758+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515191656Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c2",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480870+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515193390Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c3",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.480956+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515195115Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c4",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.481028+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515196688Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c5",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.481084+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515198397Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c6",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.481137+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515199938Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c7",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.481189+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515201342Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c8",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.481241+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515203035Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1c9",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.481294+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), next retry is Tue Jun 30 02:40:30 2026, retry nbr 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.515204005Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1ca",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.519116+00:00 instance-20251217-175237 systemd[1]: sysstat-collect.service: Deactivated successfully."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.519419761Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1y3zs6f51u1cb",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:00.519910+00:00 instance-20251217-175237 systemd[1]: Finished sysstat-collect.service - system activity accounting tool."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:00.520892398Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:00.642786612Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313su",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.020768+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,019 - aiohttp.access - INFO - 186.154.35.136 [30/Jun/2026:02:37:26 +0000] \"POST /tasker HTTP/1.1\" 200 295 \"-\" \"Tasker/6.6.20 (Android/16)\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.021061998Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313sv",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.021830+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,020 - aiohttp.access - INFO - 62.210.142.148 [30/Jun/2026:02:40:13 +0000] \"GET / HTTP/1.0\" 404 174 \"-\" \"-\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.053023263Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313sw",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.024198+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,024 - src.bot - INFO - Processing manual transaction: {'amount': 0.0, 'merchant': 'UNKNOWN', 'date': '30/06/2026 02:40'}"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.053027895Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313sx",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.027518+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,026 - __main__ - INFO - Checking for new emails..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.053028787Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313sy",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.027950+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,026 - src.ingestion - INFO - Fetching latest 1 emails with query: from:(alertasynotificaciones@an.notificacionesbancolombia.com OR noreply@rappicard.co OR lejom_0721@hotmail.com) is:unread newer_than:3d"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.053029496Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313sz",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.428066+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,427 - src.ingestion - INFO - Fetched 1 emails."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.428879878Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1i4gp1nf4313t0",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.431578+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,431 - src.bot - WARNING - ⚠️ Telegram Request failed (Attempt 1/3): Timed out"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.432010158Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:13.566738980Z"
+  },
+  {
+    "insertId": "1dea1qkf1dpf8i",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:13.984184+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:13,983 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/sendMessage \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:13.984724253Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:14.566976496Z"
+  },
+  {
+    "insertId": "1s5gufbf3b1cvp",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:14.583072+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:14,582 - __main__ - ERROR - Error in tasker webhook: Invalid control character at: line 1 column 48 (char 47)"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:14.583446672Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:15.576599914Z"
+  },
+  {
+    "insertId": "1s5gufbf3b1cvq",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:14.583320+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:14,582 - aiohttp.access - INFO - 186.154.35.136 [30/Jun/2026:02:40:14 +0000] \"POST /tasker HTTP/1.1\" 500 247 \"-\" \"Tasker/6.6.20 (Android/16)\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:14.585519592Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:15.576599914Z"
+  },
+  {
+    "insertId": "zuw1yff3l3mx2",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:15.681630+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:15,680 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/sendMessage \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:15.682214705Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:16.558735089Z"
+  },
+  {
+    "insertId": "1jtgtq0f3nb962",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:17.531593+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:17,530 - __main__ - ERROR - Error in tasker webhook: Invalid control character at: line 1 column 48 (char 47)"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:17.532054067Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:17.559317656Z"
+  },
+  {
+    "insertId": "1jtgtq0f3nb963",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:17.531877+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:17,531 - aiohttp.access - INFO - 186.154.35.136 [30/Jun/2026:02:40:17 +0000] \"POST /tasker HTTP/1.1\" 500 247 \"-\" \"Tasker/6.6.20 (Android/16)\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:17.532061406Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:17.559317656Z"
+  },
+  {
+    "insertId": "1lqrmigf3uvl0u",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:23.772241+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:23,771 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:23.772690351Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:24.561429581Z"
+  },
+  {
+    "insertId": "1lqrmigf3uvl0v",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:23.790806+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:23,790 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:23.809392185Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:24.561429581Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtnt",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.891724+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:33,890 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.892767571Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtnu",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.893534+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.894819443Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtnv",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.894321+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.894825402Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtnw",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895032+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896383032Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtnx",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895163+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896388945Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtny",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895229+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896390710Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtnz",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895291+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896392255Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto0",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895363+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896394198Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto1",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895496+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896395505Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto2",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.895699+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896396708Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto3",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896004+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896397910Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto4",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896142+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.896399424Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto5",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896314+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897710906Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto6",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896385+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897715488Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto7",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896437+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897716853Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto8",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896485+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897718112Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wto9",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896564+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897719133Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtoa",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896642+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897720099Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtob",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896712+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897721108Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtoc",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896858+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897722062Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtod",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.896938+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897723265Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtoe",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.897000+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), next retry is Tue Jun 30 02:41:03 2026, retry nbr 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.897724390Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1thqsgqf51wtof",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:33.909786+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:33,909 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:33.910197629Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:34.556731739Z"
+  },
+  {
+    "insertId": "1a2dtlpe605y5",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:44.009069+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:44,008 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:44.009508540Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:44.562706691Z"
+  },
+  {
+    "insertId": "1a2dtlpe605y6",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:44.029026+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:44,028 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:44.029418528Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:44.562706691Z"
+  },
+  {
+    "insertId": "1mjqi03f5b906y",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:54.126262+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:54,125 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:54.126971429Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:54.562944128Z"
+  },
+  {
+    "insertId": "1mjqi03f5b906z",
+    "jsonPayload": {
+      "message": "2026-06-30T02:40:54.148186+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:40:54,147 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:40:54.148704981Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:40:54.562944128Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kf",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.242765+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:04,241 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.244258522Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kg",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.245148+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.246252164Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kh",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.245324+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.246257224Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85ki",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.245447+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.246259624Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kj",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.245756+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.246261477Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kk",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.245907+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.246263262Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kl",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.246062+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.246264929Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85km",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.246412+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247674182Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kn",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.246566+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247678400Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85ko",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.246671+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247680935Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kp",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.246840+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247683001Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kq",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.246924+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247684695Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kr",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247007+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247686419Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85ks",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247088+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247688228Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kt",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247177+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247689350Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85ku",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247268+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247690705Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kv",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247354+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247691849Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kw",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247418+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.247693291Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kx",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247570+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.248842732Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85ky",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247648+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' resumed (module 'builtin:omfile') [v8.2312.0 try https://www.rsyslog.com/e/2359 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.248845831Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85kz",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247716+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), retry 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.248846672Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85l0",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.247776+00:00 instance-20251217-175237 rsyslogd: action 'action-8-builtin:omfile' suspended (module 'builtin:omfile'), next retry is Tue Jun 30 02:41:34 2026, retry nbr 0. There should be messages before this one giving the reason for suspension. [v8.2312.0 try https://www.rsyslog.com/e/2007 ]"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.248847514Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "e7lgftf3v85l1",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:04.267889+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:04,267 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:04.268397293Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:04.565241298Z"
+  },
+  {
+    "insertId": "iw4zsqf4i4iia",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:13.434776+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:13,433 - __main__ - INFO - Checking for new emails..."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "zone": "us-central1-c",
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:13.435375685Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:13.568062442Z"
+  },
+  {
+    "insertId": "iw4zsqf4i4iib",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:13.435072+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:13,434 - src.ingestion - INFO - Fetching latest 1 emails with query: from:(alertasynotificaciones@an.notificacionesbancolombia.com OR noreply@rappicard.co OR lejom_0721@hotmail.com) is:unread newer_than:3d"
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:13.435381266Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:13.568062442Z"
+  },
+  {
+    "insertId": "v2vhy6f4w3ixz",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:13.866487+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:13,866 - src.ingestion - INFO - Fetched 1 emails."
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "project_id": "autotrx-481014",
+        "instance_id": "1965739812148143823",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:13.866788734Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:14.563671045Z"
+  },
+  {
+    "insertId": "v2vhy6f4w3iy0",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:14.362526+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:14,362 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8223881905:AAEMgBk6iPF8_MsODXDKnbKbk-AUVKies0E/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:14.363037228Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:14.563671045Z"
+  },
+  {
+    "insertId": "v2vhy6f4w3iy1",
+    "jsonPayload": {
+      "message": "2026-06-30T02:41:14.387697+00:00 instance-20251217-175237 run_bot.sh[2289629]: 2026-06-30 02:41:14,387 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8420574554:AAFnPtOyS8PS20DkoxSAr7YedFGe4tPoNk0/getUpdates \"HTTP/1.1 200 OK\""
+    },
+    "resource": {
+      "type": "gce_instance",
+      "labels": {
+        "instance_id": "1965739812148143823",
+        "project_id": "autotrx-481014",
+        "zone": "us-central1-c"
+      }
+    },
+    "timestamp": "2026-06-30T02:41:14.388244252Z",
+    "labels": {
+      "compute.googleapis.com/resource_name": "instance-20251217-175237.us-central1-c.c.autotrx-481014.internal"
+    },
+    "logName": "projects/autotrx-481014/logs/syslog",
+    "receiveTimestamp": "2026-06-30T02:41:14.563671045Z"
+  }
+]
