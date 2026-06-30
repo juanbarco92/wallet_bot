@@ -31,12 +31,16 @@ class TransactionParser:
         # Format B: "a MERCHANT el" (Transfers)
         self.merchant_patterns = [
             r"Comercio\s+(.*?)\s*\r?\n", # RappiCard
-            r"\ben\s+(.*?)\s+(?:con|si tienes dudas)",
-            r"\ba\s+(.*?)\s*,?\s*el\s+(?:\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}|\d{2}/\d{2}|\d{4}-\d{2}-\d{2})",
             r"a la llave\s+(@?[\w\d]+)", # Covers QR and Transfers to Key
             r"Retiraste\s+[\d\.,\s\$]+en\s+(.*?)\s+de tu", # Withdrawals
             r"pago Factura Programada\s+(.*?)(?:\s+Ref|\s+por)", # Facturas Programadas
-            r"Le enviaste a\s+(.*?)(?:\s+en su cuenta|\s*$)", # Nubank Transfers
+            r"Le enviaste a\s+(.*?)(?:\s+en su cuenta|\s*$)", # Nubank Transfers (Old)
+            r"Se los enviaste a\s+(.*?)(?:\. por|\. Si no reconoces|\s+con\s+tu|\s+en\s+su\s+cuenta|\.|$)", # Nubank Transfers Sent
+            r"El pago de.*?a\s+(.*?)\s+fue exitoso", # Nubank Bill Payments
+            r"Pagaste en\s+(.*?)\s+con\s+(?:tu|su)\s+cuenta", # Nubank PSE / Approved Payments
+            r"tarjeta de beneficios Glim.*?en\s+(.*?)(?:\.|$)", # Glim Payments
+            r"\ben\s+([^.!?]*?)\s+(?:con|si tienes dudas)", # General fallback 'en MERCHANT con'
+            r"\ba\s+([^.!?]*?)\s*,?\s*el\s+(?:\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}|\d{2}/\d{2}|\d{4}-\d{2}-\d{2})", # General fallback 'a MERCHANT el'
         ]
         
         # 3. Date Patterns

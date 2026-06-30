@@ -3,7 +3,7 @@
 ## Project Architecture
 - **Environment:** Runs in a Google Cloud Platform (GCP) Compute Engine instance.
 - **Repository:** The code in the repository matches the running code on GCP exactly.
-- **Core Functionality:** Processes bank transaction notifications from Gmail and manual inputs from Telegram, prompting the user for categorization, and then logs them into a Google Sheet.
+- **Core Functionality:** Processes bank transaction notifications from Gmail (including RappiCard and Glim) and manual inputs from Telegram, prompting the user for categorization, and then logs them into a Google Sheet.
 
 ## Key Behaviors & Known Quirks
 1. **Google Sheets Persistence (`src/loader.py`):**
@@ -17,6 +17,7 @@
 3. **MIME & Forwarding Email Robustness (`src/parser.py`):**
    - Email forwarding (e.g. from Outlook/Hotmail to Gmail) often inserts carriage returns (`\r\n`). All regex patterns (amounts, merchant, and dates) are case-insensitive and support whitespace matching (`\s+`, `\r?\n`) to handle these characters properly.
    - Date regex supports matching and normalizing `YYYY/MM/DD` date formats inside transfers.
+   - Supports Glim transaction emails (sender `no-responder@getglim.com`) using a specific pattern to match the merchant before general fallback rules are processed: `r"tarjeta de beneficios Glim.*?en\s+(.*?)(?:\.|$)"`.
 4. **Google Cloud Logging Integration (`main.py`):**
    - Integrates with `google-cloud-logging` to stream logs directly to GCP Cloud Logging. This consumes 0 bytes of the VM's local 30GB persistent disk.
    - In case of warning scenarios (e.g. `merchant == 'UNKNOWN'` or `amount == 0.0`), the system logs a `logger.warning` containing the Gmail message ID, sender, subject, and the entire MIME-decoded body, making troubleshooting via Log Explorer simple.

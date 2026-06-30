@@ -146,12 +146,20 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
 
 async def tasker_webhook_handler(request):
     try:
-        data = await request.json()
+        logger.info("Received request on /tasker webhook.")
+        
+        try:
+            data = await request.json()
+        except Exception as json_err:
+            raw_body = await request.text()
+            logger.error(f"Malformed JSON in tasker webhook: {json_err}. Raw body: {raw_body!r}")
+            return web.json_response({"error": "Malformed JSON"}, status=400)
+
         secret = request.headers.get("Authorization")
         
         # Verify secret
         if secret != os.getenv("TASKER_SECRET", "supersecreto"):
-            logger.warning(f"Unauthorized tasker ping with secret {secret}")
+            logger.warning(f"Unauthorized tasker ping with secret: {secret}")
             return web.json_response({"error": "Unauthorized"}, status=401)
         
         amount = data.get("amount")
@@ -166,7 +174,7 @@ async def tasker_webhook_handler(request):
                     amount = parsed.get("amount")
                     merchant = parsed.get("merchant")
                 except Exception as e:
-                    logger.warning(f"Error parsing raw texto with TransactionParser: {e}")
+                    logger.warning(f"Error parsing raw texto with TransactionParser: {e} | Text: {texto!r}")
             else:
                 try:
                     parts = str(texto).strip().split(" ", 1)
@@ -178,9 +186,10 @@ async def tasker_webhook_handler(request):
                             amount = float(amount_str)
                         merchant = parts[1]
                 except Exception as e:
-                    logger.warning(f"Error parsing fallback raw texto: {e}")
+                    logger.warning(f"Error parsing fallback raw texto: {e} | Text: {texto!r}")
         
         if amount is None or not merchant:
+            logger.warning(f"Tasker payload invalid (missing amount or merchant): {data} | Resolved amount: {amount}, merchant: {merchant}")
             return web.json_response({"error": "Invalid payload, 'amount' and 'merchant' required, or valid 'texto'"}, status=400)
             
         transaction_data = {
@@ -191,14 +200,16 @@ async def tasker_webhook_handler(request):
         
         bot_juanma = request.app["bot_juanma"]
         if not bot_juanma:
+            logger.error("Bot subsystem not ready inside /tasker webhook handler.")
             return web.json_response({"error": "Bot subsystem not ready"}, status=503)
             
         asyncio.create_task(bot_juanma.process_manual_transaction(transaction_data))
+        logger.info(f"Successfully processed Tasker transaction: {transaction_data}")
         
         return web.json_response({"status": "success", "message": "Transaction sent to bot", "data": transaction_data})
         
     except Exception as e:
-        logger.error(f"Error in tasker webhook: {e}")
+        logger.error(f"Error in tasker webhook general handler: {e}", exc_info=True)
         return web.json_response({"error": str(e)}, status=500)
 
 async def start_web_server(bots, parser=None):

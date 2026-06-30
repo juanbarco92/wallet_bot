@@ -1,0 +1,957 @@
+Delivered-To: juanbarco92@gmail.com
+Received: by 2002:a05:6022:18c:b0:107:3473:f30f with SMTP id 12csp1732204lag;
+        Sat, 27 Jun 2026 11:49:05 -0700 (PDT)
+X-Received: by 2002:ac8:7d4b:0:b0:51a:8c9b:649e with SMTP id d75a77b69052e-51a8c9b94b9mr58407261cf.66.1782586145315;
+        Sat, 27 Jun 2026 11:49:05 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1782586145; cv=none;
+        d=google.com; s=arc-20260327;
+        b=Hm1y9P/hAsf5bTC6EEc0I9FR3+LuXfD7/cW3ND4YCzcLHsSef9PtL2bJd4VApbqm0C
+         tt0Dh2fUF0Dl32/K7HTFCd5VmYpR8ZWlzG6uf6GMUBbkyDu4SNZgDx5iLPcUDNiNC8IL
+         dmXsbhdrQniM/ochR0RBGirwmGw6xojvB5Q4CuEF8wzUo4SFPiIdQAEVW2MO3Gv2Vx7E
+         EVvDBumUUDOSvbgJlUDhdaUt5KEGfZWPgnetS1Vgiv8wzWMigvYFjaj4vSfTZzQRWWch
+         3afoPU8MhCm96etlWC+nUuURWt73H8zj/Jlzvw11onUF8Srjn5S4whpyasSaxWUF8Jo1
+         HMfA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=message-id:list-unsubscribe-post:list-unsubscribe:to:from:subject
+         :mime-version:date:dkim-signature:dkim-signature;
+        bh=8C9rpDz2W/u/vKlZXTyuY9gUc+3QOYSoW68ZMQdHHv0=;
+        fh=MjE4eJxqkpsIbI2NK4eU1CZK2aGmMqJUc3K/u9dr2XA=;
+        b=fRquogmsQSkR1w/Bk8jpKLzoJJ6bjr6akDkYCnf5uUhc+noOr6Gc1VbH6nYqPr4Nc+
+         LVIaW6l17s2cW19EY+RaNF/lgWwaR9+R4MK09dTS100Hia4abgD8BNKQ2Wdso0OusQnm
+         c2COlpXInZ6ugDVkCUidMSIIYrAekGmRklvjj4kpEJmSbaBOMj9vHHfZajmncjWTFGdQ
+         c2Nu3aistTGimrdZZZyf2Go3GEh5wkZVI7ySe0hlONwy5Ff8MXuINulhMXEquS8V5Iz3
+         KD852i78nViCjm+EzRbRF4RQ2sKWEVkymHachsfA8w8nZhUoaVGX9qQUL+pdYFf29DQz
+         WRhg==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@cio89985.getglim.com header.s=mailo header.b=g4bAvKnr;
+       dkim=pass header.i=@mailgun.org header.s=mg header.b=s1+NilSB;
+       spf=pass (google.com: domain of postmaster@cio89985.getglim.com designates 159.112.241.115 as permitted sender) smtp.mailfrom=postmaster@cio89985.getglim.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=getglim.com
+Return-Path: <postmaster@cio89985.getglim.com>
+Received: from v5115.v5c4dda55.use4.send.mailgun.net (v5115.v5c4dda55.use4.send.mailgun.net. [159.112.241.115])
+        by mx.google.com with UTF8SMTPS id d75a77b69052e-51b55e59175si22707331cf.29.2026.06.27.11.49.05
+        for <juanbarco92@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Sat, 27 Jun 2026 11:49:05 -0700 (PDT)
+Received-SPF: pass (google.com: domain of postmaster@cio89985.getglim.com designates 159.112.241.115 as permitted sender) client-ip=159.112.241.115;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@cio89985.getglim.com header.s=mailo header.b=g4bAvKnr;
+       dkim=pass header.i=@mailgun.org header.s=mg header.b=s1+NilSB;
+       spf=pass (google.com: domain of postmaster@cio89985.getglim.com designates 159.112.241.115 as permitted sender) smtp.mailfrom=postmaster@cio89985.getglim.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=getglim.com
+DKIM-Signature: a=rsa-sha256; v=1; c=relaxed/relaxed; d=cio89985.getglim.com; q=dns/txt; s=mailo; t=1782586145; x=1782593345;
+ h=Message-Id: List-Unsubscribe-Post: List-Unsubscribe: To: To: From: From: Subject: Subject: Content-Type: Mime-Version: Date: X-Feedback-Id: Sender;
+ bh=8C9rpDz2W/u/vKlZXTyuY9gUc+3QOYSoW68ZMQdHHv0=;
+ b=g4bAvKnrkpYXRksERF68XT+bZ0BFFawe4NtGfY60zqMW5mUYQMc/jPt5Rtv9JR2j8WhosDRn5K++7QXRFclhlygN/KTVTwEbpWRAqBI3A32A6P58G8mEh8lskc8zf7dQoAROAqtmtDffzJioWDZ6uU8ZotOOUdyvfV78Qyv+8Oc=
+DKIM-Signature: a=rsa-sha256; v=1; c=relaxed/relaxed; d=mailgun.org; q=dns/txt; s=mg; t=1782586145; x=1782593345;
+ h=Message-Id: List-Unsubscribe-Post: List-Unsubscribe: To: To: From: From: Subject: Subject: Content-Type: Mime-Version: Date: X-Feedback-Id: Sender;
+ bh=8C9rpDz2W/u/vKlZXTyuY9gUc+3QOYSoW68ZMQdHHv0=;
+ b=s1+NilSBDU46PbxXBApTtT3h5MkRWweB6zGTGbTe5FWUVIep7v5vSflV4urzk3tjqZkTXg0B8uSWTWCmft3on6w1KfFnt0fMDCUep6IWmU1CjsH3yi9QTkAH8FpLDq3K22+x+c2wNNUhciqmrNDNTRm7ug5z0gPbY9EHHbwibl8=
+X-Mailgun-Sid: WyJjNmViNyIsImp1YW5iYXJjbzkyQGdtYWlsLmNvbSIsIjRhNDRmNyJd
+X-Feedback-Id: postmaster@cio89985.getglim.com::647f16abe8c5700c10f5b25c:mailgun
+Received: by 947a52fc3389355ca37c3d4ecf004142b457d1d2761c5c278b62856b0a7ff41a with HTTP
+ id 6a401b21ed749888703d68a3; Sat, 27 Jun 2026 18:49:05 GMT
+X-Mailgun-Sending-Ip: 159.112.241.115
+Date: Sat, 27 Jun 2026 18:49:05 +0000
+Mime-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="6e45ad4b1d1d9c1d6322871d4f9304ac059f1fe5fc795ca84d309fc474f1"
+Subject: =?UTF-8?q?Transacci=C3=B3n_aprobada_con_tu_tarjeta_de_beneficios?=
+From: Glim <no-responder@getglim.com>
+To: juanbarco92@gmail.com
+X-Mailgun-Dkim: true
+X-Mailgun-Native-Send: true
+X-Mailgun-Track-Clicks: false
+X-Mailgun-Track-Opens: false
+X-Report-Abuse-To: badactor@customer.io
+List-Unsubscribe: <mailto:32.MRTVGN3ZKFTUEQKPGZKEC5JSKRAWOR3GINWW4MZTNQ3TOSDON52WUSKMPEZXM2Z5@unsubscribe2.customer.io>,
+ <https://e.customeriomail.com/unsubscribe/dgS7yQgBAO6TAu2TAgGfCmn33l77HnoujILy3vk=>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+X-Mailer: Customer.io (dgS7yQgBAO6TAu2TAgGfCmn33l77HnoujILy3vk=;
+ +https://whatis.customeriomail.com)
+X-Mailgun-Variables: {"email_id": "dgS7yQgBAO6TAu2TAgGfCmn33l77HnoujILy3vk="}
+Message-Id: <20260627184905.26541b3006ddd208@cio89985.getglim.com>
+
+--6e45ad4b1d1d9c1d6322871d4f9304ac059f1fe5fc795ca84d309fc474f1
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
+
+=C2=A1Qu=C3=A9 dicha poder disfrutarlos! =F0=9F=A5=B3 =C2=A0
+
+*******************************************************
+Se siente bien usar tus beneficios donde quieras, =C2=BFno?
+*******************************************************
+
+Juan Manuel,
+
+Realizaste un pago por $17.600,00 COP con tu tarjeta de beneficios Glim el =
+27/06/2026 a las 18:46 en ILLY.
+
+Ver=C3=A1s=C2=A0 descontado este monto de tu saldo en Glim Alimentacion. Re=
+visa los detalles de tus movimientos en tu app.=C2=A0
+
+=C2=A0
+
+Por cierto, =C2=BFsab=C3=ADas que puedes pausar los bolsillos que no quiera=
+s usar en tus pagos? Mientras un bolsillo est=C3=A9 pausado, ninguna compra=
+ con la tarjeta se debita de ah=C3=AD=C2=A0 y tu saldo queda intacto.
+
+Actualiza tu app para acceder a esta funcionalidad.=C2=A0
+
+Actualiza tu app ( https://www.getglim.com/descarga-glim )
+
+*********************************
+As=C3=AD puedes pausar tus bolsillos:
+*********************************
+
+Bolsillo de Alimentaci=C3=B3n pausado
+
+Bolsillo pausado
+
+=F0=9F=8D=94
+
+Alimentaci=C3=B3n
+
+Saldo disponible
+
+$ 10.000.000
+
+i
+
+Este bolsillo no se usar=C3=A1 para pagar. React=C3=ADvalo cuando lo necesi=
+tes.
+=E2=9C=95
+
+Acciones
+
+Mover saldo a tu billetera
+
+Transfiere saldo a tu cuenta COP
+
+=E2=80=BA
+
+Reactivar bolsillo
+
+Habilita los pagos de este bolsillo
+
+=E2=80=BA
+
+Retirar efectivo
+
+Saca efectivo en cualquier cajero
+
+=E2=80=BA
+
+C=C3=B3mo funciona
+
+Entra al detalle del bolsillo que quieres pausar.
+
+Toca "Pausar bolsillo" y conf=C3=ADrmalo.
+
+Mientras est=C3=A9 pausado, ninguna compra se debita de ese bolsillo.
+
+React=C3=ADvalo cuando quieras, desde el detalle del bolsillo.
+
+Preguntas frecuentes
+
+=C2=BFQu=C3=A9 pasa con mi saldo si pauso un bolsillo?
+
+Nada. El saldo queda "congelado": no se mueve, no se resta de tu total y no=
+ vence m=C3=A1s r=C3=A1pido.
+
+=C2=BFPuedo pausar todos mis bolsillos?
+
+No. Siempre debe quedar al menos un bolsillo activo. Si intentas pausar el =
+=C3=BAltimo, la app te lo impide.
+
+=C2=BFQu=C3=A9 pasa si pago y el bolsillo est=C3=A1 pausado?
+
+Si no hay otro bolsillo que aplique, la compra se rechaza y te avisamos al =
+instante con una notificaci=C3=B3n para reactivarlo.
+
+-------------------------------
+=C2=BFNecesitas ayuda? Cont=C3=A1ctanos
+-------------------------------
+
+=F0=9F=93=A7
+
+Email
+-----
+
+ayuda@getglim.com
+
+Respuesta en 1-4 horas
+
+=F0=9F=92=AC
+
+WhatsApp
+--------
+
++57 300 987 2770 ( https://wa.me/573009872770 )
+
+Respuesta inmediata =E2=9A=A1
+
+=F0=9F=93=9A
+
+Centro de Ayuda
+---------------
+
+ayuda.getglim.com ( https://ayuda.getglim.com )
+
+Gu=C3=ADas y tutoriales
+
+=F0=9F=92=A1 Estamos aqu=C3=AD para ayudarte. Escoge el canal que prefieras=
+=2E
+
+Recuerda que estamos aqu=C3=AD para solucionar cualquier duda que tengas, e=
+scribe a nuestro centro de ayuda. Estaremos muy pendientes para ayudarte en=
+ el proceso.=C2=A0
+Consulta nuestro Centro de Ayuda o comun=C3=ADcate con nosotros ( https://a=
+yuda.getglim.com )
+---------------------------------------------------------------------------=
+---------------------------------------------------------------------------=
+--------
+
+Instagram ( https://www.instagram.com/getglim.col/ )LinkedIn ( https://www.=
+linkedin.com/company/getglim/ )
+Sobre Glim ( https://getglim.com/ ) =C2=A0 =C2=A0 T&C ( https://getglim.com=
+/terminos-y-condiciones/ )=C2=A0 =C2=A0 =C2=A0Centro de Ayuda ( https://ayu=
+da.getglim.com )
+
+=C2=BFNo quieres recibir m=C3=A1s correos? Darse de baja aqu=C3=AD ( https:=
+//track.customer.io/unsubscribe/dgS7yQgBAO6TAu2TAgGfCmn33l77HnoujILy3vk=3D =
+).=C2=A0 Recibes estos mensajes porque tienes acceso a nuestros beneficios =
+a trav=C3=A9s de Mercado Libre Colombia Ltda.
+
+=C2=A92026 =C2=A0 Glim Colombia SAS. Bogot=C3=A1, Colombia.
+--6e45ad4b1d1d9c1d6322871d4f9304ac059f1fe5fc795ca84d309fc474f1
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset="utf-8"
+
+<!DOCTYPE html><html xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"u=
+rn:schemas-microsoft-com:office:office" lang=3D"en"><head><title></title><m=
+eta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8"/><me=
+ta name=3D"viewport" content=3D"width=3Ddevice-width,initial-scale=3D1"/><!=
+--[if mso]>
+<xml><w:WordDocument xmlns:w=3D"urn:schemas-microsoft-com:office:word"><w:D=
+ontUseAdvancedTypographyReadingMail/></w:WordDocument>
+<o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/=
+></o:OfficeDocumentSettings></xml>
+<![endif]--><!--[if !mso]><!--><link href=3D"https://fonts.googleapis.com/c=
+ss2?family=3DSource+Sans+Pro:wght@400;700;900&amp;display=3Dswap" rel=3D"st=
+ylesheet" type=3D"text/css"/><!--<![endif]--><style>
+*{box-sizing:border-box}body{margin:0;padding:0}a[x-apple-data-detectors]{c=
+olor:inherit!important;text-decoration:inherit!important}#MessageViewBody a=
+{color:inherit;text-decoration:none}p{line-height:inherit}.desktop_hide,.de=
+sktop_hide table{mso-hide:all;display:none;max-height:0;overflow:hidden}.im=
+age_block img+div{display:none}sub,sup{font-size:75%;line-height:0} @media =
+(max-width:525px){.row-content{width:100%!important}.stack .column{width:10=
+0%;display:block}.mobile_hide{min-height:0;max-height:0;max-width:0;display=
+:none;overflow:hidden;font-size:0}.desktop_hide,.desktop_hide table{display=
+:table!important;max-height:none!important}.social_block .social-table{disp=
+lay:inline-block!important}}
+</style><!--[if mso ]><style>sup, sub { font-size: 100% !important; } sup {=
+ mso-text-raise:10% } sub { mso-text-raise:-10% }</style> <![endif]--></hea=
+d><body class=3D"body" style=3D"margin:0;padding:0;-webkit-text-size-adjust=
+:none;text-size-adjust:none;background-color:#fff"><div style=3D"display: n=
+one">=C2=A1Qu=C3=A9 dicha poder disfrutarlos! =F0=9F=A5=B3 =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=
+=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=
+=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=
+=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=
+=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =E2=80=87=CD=8F =
+=E2=80=87=CD=8F =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =
+=C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=
+=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD =C2=AD=C2=A0</div><table clas=
+s=3D"nl-container" width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacin=
+g=3D"0" role=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:=
+0;background-color:#fff"><tbody><tr><td><table class=3D"row row-1" align=3D=
+"center" width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" ro=
+le=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0;backgrou=
+nd-color:#f7f8fa"><tbody><tr><td><table class=3D"row-content stack" align=
+=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presen=
+tation" style=3D"mso-table-lspace:0;mso-table-rspace:0;background-color:#ff=
+f;border-radius:0;color:#343446;width:505px;margin:0 auto" width=3D"505"><t=
+body><tr><td class=3D"column column-1" width=3D"100%" style=3D"mso-table-ls=
+pace:0;mso-table-rspace:0;font-weight:400;text-align:left;vertical-align:to=
+p"><table width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" r=
+ole=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0"><tbody=
+><tr><td class=3D"col-pad" style=3D"padding-bottom:5px;padding-top:5px"><ta=
+ble class=3D"image_block block-1" width=3D"100%" border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"mso-table-lspace:0;=
+mso-table-rspace:0"><tbody><tr><td class=3D"pad" style=3D"width:100%" align=
+=3D"center"><div style=3D"max-width:505px"><img src=3D"https://userimg-asse=
+ts.customeriomail.com/images/client-env-140475/1773867545250_glim-header-bl=
+ack_01KM1BXCAXSB218AS5QSM56VM0.png" style=3D"display:block;height:auto;bord=
+er:0;width:100%" width=3D"505" alt=3D"" title=3D"" height=3D"auto"/></div><=
+/td></tr></tbody></table><table class=3D"heading_block block-2" width=3D"10=
+0%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" =
+style=3D"mso-table-lspace:0;mso-table-rspace:0"><tbody><tr><td class=3D"pad=
+" style=3D"width:100%;padding-top:25px;padding-left:10px;padding-right:10px=
+" align=3D"center"><h1 style=3D"margin:0;color:#000;direction:ltr;font-fami=
+ly:'Source Sans Pro',Tahoma,Verdana,Segoe,sans-serif;font-size:23px;font-we=
+ight:700;letter-spacing:normal;line-height:1.2;text-align:center;margin-top=
+:0;margin-bottom:0;mso-line-height-alt:28px"><span class=3D"tinyMce-placeho=
+lder" style=3D"word-break: break-word;">Se siente bien usar tus beneficios =
+donde quieras, =C2=BFno?</span></h1></td></tr></tbody></table><table class=
+=3D"text_block block-3" width=3D"100%" border=3D"0" cellpadding=3D"35" cell=
+spacing=3D"0" role=3D"presentation" style=3D"mso-table-lspace:0;mso-table-r=
+space:0;word-break:break-word"><tbody><tr><td class=3D"pad"><div style=3D"f=
+ont-family:sans-serif"><div class=3D"" style=3D"font-size:12px;font-family:=
+'Source Sans Pro',Tahoma,Verdana,Segoe,sans-serif;mso-line-height-alt:14.39=
+9999999999999px;color:#000;line-height:1.2"><p dir=3D"ltr" style=3D"margin:=
+0;font-size:14px;text-align:justify;mso-line-height-alt:16.8px;letter-spaci=
+ng:normal"><span style=3D"word-break: break-word; font-size: 14px;"><strong=
+>Juan Manuel</strong>,<br/><br/></span></p><p style=3D"margin:0;font-size:1=
+4px;mso-line-height-alt:16.8px;letter-spacing:normal">
+<span style=3D"word-break: break-word; font-size: 14px;">Realizaste un pago=
+ por<strong> $17.600,00 COP</strong> con tu tarjeta de beneficios Glim el <=
+strong>27/06/2026 </strong>a las <strong>18:46</strong> en </span>ILLY.<br/=
+><br/>
+Ver=C3=A1s=C2=A0 descontado este monto de tu saldo en <strong>Glim Alimenta=
+cion</strong>. <span style=3D"word-break: break-word; font-size: 14px;">Rev=
+isa los detalles de tus movimientos en tu app.=C2=A0</span></p><p dir=3D"lt=
+r" style=3D"margin:0;font-size:14px;text-align:justify;mso-line-height-alt:=
+16.8px;letter-spacing:normal"><span style=3D"word-break: break-word; font-s=
+ize: 14px;">=C2=A0<br/>
+Por cierto, =C2=BFsab=C3=ADas que puedes<strong> pausar los bolsillos</stro=
+ng> que no quieras usar en tus pagos? Mientras un bolsillo est=C3=A9 pausad=
+o, ninguna compra con la tarjeta se debita de ah=C3=AD=C2=A0 y tu saldo que=
+da intacto.<br/><br/>Actualiza tu app para acceder a esta funcionalidad.=C2=
+=A0</span></p></div></div></td></tr></tbody></table><table class=3D"button_=
+block block-4" width=3D"100%" border=3D"0" cellpadding=3D"10" cellspacing=
+=3D"0" role=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0=
+"><tbody><tr><td class=3D"pad" align=3D"center"><a href=3D"http://email.get=
+glim.com/e/c/eyJlbWFpbF9pZCI6ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91ak=
+lMeTN2az0iLCJocmVmIjoiaHR0cHM6Ly93d3cuZ2V0Z2xpbS5jb20vZGVzY2FyZ2EtZ2xpbSIsI=
+mludGVybmFsIjoiYmJjOTA4MDFiZDI5ZWU5MzAyIiwibGlua19pZCI6NjM3MH0/270153a4a8ad=
+2741ac83de146e257108e12073fef92f81388024391e37fa50b3" target=3D"_blank" sty=
+le=3D"color:#ffffff;text-decoration:none;"><!--[if mso]>
+<v:roundrect xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:w=3D"urn:schem=
+as-microsoft-com:office:word" href=3D"http://email.getglim.com/e/c/eyJlbWFp=
+bF9pZCI6ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjo=
+iaHR0cHM6Ly93d3cuZ2V0Z2xpbS5jb20vZGVzY2FyZ2EtZ2xpbSIsImludGVybmFsIjoiYmJjOT=
+A4MDFiZDI5ZWU5MzAyIiwibGlua19pZCI6NjM3MH0/270153a4a8ad2741ac83de146e257108e=
+12073fef92f81388024391e37fa50b3" style=3D"height:44px;width:153px;v-text-an=
+chor:middle;" arcsize=3D"112%" fillcolor=3D"#ff5900">
+<v:stroke dashstyle=3D"Solid" weight=3D"0px" color=3D"#ff5900"/>
+<w:anchorlock/>
+<v:textbox inset=3D"0px,0px,0px,0px">
+<center dir=3D"false" style=3D"color:#ffffff;font-family:sans-serif;font-si=
+ze:17px">
+<![endif]-->
+<span class=3D"button" style=3D"background-color: #ff5900; border-bottom: 0=
+px solid transparent; border-left: 0px solid transparent; border-radius: 49=
+px; border-right: 0px solid transparent; border-top: 0px solid transparent;=
+ color: #ffffff; display: inline-block; font-family: 'Source Sans Pro', Tah=
+oma, Verdana, Segoe, sans-serif; font-size: 17px; font-weight: 400; mso-bor=
+der-alt: none; text-align: center; width: auto; word-break: keep-all; lette=
+r-spacing: normal;"><span class=3D"btn-pad" style=3D"word-break: break-word=
+; padding-left: 20px; padding-right: 20px; padding-top: 5px; padding-bottom=
+: 5px; display: block;"><span style=3D"word-break: break-word; line-height:=
+ 34px;">Actualiza tu app</span></span></span>
+<!--[if mso]></center></v:textbox></v:roundrect><![endif]--></a></td></tr><=
+/tbody></table><table class=3D"heading_block block-5" width=3D"100%" border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"m=
+so-table-lspace:0;mso-table-rspace:0"><tbody><tr><td class=3D"pad" style=3D=
+"width:100%" align=3D"center"><h1 style=3D"margin:0;color:#000;direction:lt=
+r;font-family:'Source Sans Pro',Tahoma,Verdana,Segoe,sans-serif;font-size:2=
+3px;font-weight:700;letter-spacing:normal;line-height:1.2;text-align:center=
+;margin-top:0;margin-bottom:0;mso-line-height-alt:28px"><span class=3D"tiny=
+Mce-placeholder" style=3D"word-break: break-word;">As=C3=AD puedes pausar t=
+us bolsillos:</span></h1></td></tr></tbody></table><table class=3D"html_blo=
+ck block-6" width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0"=
+ role=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0"><tbo=
+dy><tr><td class=3D"pad"><div style=3D"font-family:'Source Sans Pro',Tahoma=
+,Verdana,Segoe,sans-serif;text-align:center" align=3D"center"></div></td></=
+tr><tr>
+  <td align=3D"center" style=3D"background:#000000; padding:44px 40px 36px =
+40px; text-align:center;">
+    <table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=
+=3D"300" style=3D"width:300px; max-width:100%; background:#F4F5F7; border-r=
+adius:22px; overflow:hidden; margin:0 auto;">
+      <tbody><tr>
+        <td style=3D"padding:14px 14px 4px 14px;">
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0">
+            <tbody><tr>
+              <td style=3D"background:#05AD43; border-radius:11px; padding:=
+12px 15px; font-family:'Inter',Arial,sans-serif; font-weight:600; font-size=
+:12px; color:#ffffff;">Bolsillo de Alimentaci=C3=B3n pausado</td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+      <tr>
+        <td style=3D"padding:10px 14px 0 14px;">
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"background:#ffffff; border-radius:14px; box-shadow:=
+0 4px 14px rgba(0,0,0,0.06);">
+            <tbody><tr>
+              <td style=3D"padding:16px 16px 18px 16px;">
+                <table role=3D"presentation" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"background:#EEF0F2; border-radius:999px;">
+                  <tbody><tr>
+                    <td style=3D"padding:6px 3px 6px 10px;" valign=3D"middl=
+e"></td>
+                    <td style=3D"padding:6px 14px 6px 7px; font-family:'Int=
+er',Arial,sans-serif; font-weight:500; font-size:11.5px; color:#5C6066;" va=
+lign=3D"middle">Bolsillo pausado</td>
+                  </tr>
+                </tbody></table>
+                <table role=3D"presentation" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"margin-top:14px;">
+                  <tbody><tr>
+                    <td width=3D"38" valign=3D"middle">
+                      <div style=3D"width:32px;height:32px;border-radius:9p=
+x;background:#EFF0F2;text-align:center;line-height:32px;font-size:16px;">=
+=F0=9F=8D=94</div>
+                    </td>
+                    <td valign=3D"middle" style=3D"font-family:'Work Sans',=
+Arial,sans-serif; font-weight:600; font-size:18px; color:#16161A; padding-l=
+eft:9px;">Alimentaci=C3=B3n</td>
+                  </tr>
+                </tbody></table>
+                <table role=3D"presentation" width=3D"100%" cellpadding=3D"=
+0" cellspacing=3D"0" style=3D"margin-top:14px;">
+                  <tbody><tr>
+                    <td valign=3D"top" style=3D"font-family:'Inter',Arial,s=
+ans-serif; font-size:12px; color:#6C6F76;">Saldo disponible</td>
+                    <td align=3D"right" valign=3D"top"></td>
+                  </tr>
+                </tbody></table>
+                <p style=3D"font-family:'Work Sans',Arial,sans-serif; font-=
+weight:700; font-size:27px; color:#16161A; margin:2px 0 0 0; letter-spacing=
+:-0.5px;">$ 10.000.000</p>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+      <tr>
+        <td style=3D"padding:10px 14px 0 14px;">
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"background:#ECEEF0; border-radius:11px;">
+            <tbody><tr>
+              <td width=3D"26" valign=3D"top" style=3D"padding:11px 0 11px =
+12px;">
+                <div style=3D"width:16px;height:16px;border-radius:50%;back=
+ground:#16161A;text-align:center;line-height:16px;font-family:'Work Sans',A=
+rial,sans-serif;font-size:11px;font-weight:700;color:#fff;">i</div>
+              </td>
+              <td valign=3D"middle" style=3D"padding:11px 8px; font-family:=
+'Inter',Arial,sans-serif; font-size:11px; line-height:1.45; color:#4B4E54;"=
+>Este bolsillo no se usar=C3=A1 para pagar. React=C3=ADvalo cuando lo neces=
+ites.</td>
+              <td width=3D"22" align=3D"right" valign=3D"top" style=3D"padd=
+ing:11px 12px 11px 0; font-family:'Inter',Arial,sans-serif; font-size:13px;=
+ color:#A9ACB2;">=E2=9C=95</td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+      <tr>
+        <td style=3D"padding:12px 14px 16px 14px;">
+          <p style=3D"font-family:'Work Sans',Arial,sans-serif; font-weight=
+:600; font-size:14px; color:#16161A; margin:0 0 9px 4px;">Acciones</p>
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"background:#ffffff; border-radius:14px;">
+            <tbody><tr>
+              <td style=3D"padding:2px 14px;">
+                <table role=3D"presentation" width=3D"100%" cellpadding=3D"=
+0" cellspacing=3D"0" style=3D"filter:blur(2.6px); -webkit-filter:blur(2.6px=
+); opacity:0.5; border-bottom:1px solid #F0F1F3;">
+                  <tbody><tr>
+                    <td width=3D"40" valign=3D"middle" style=3D"padding:12p=
+x 0;">
+                      <div style=3D"width:30px;height:30px;border:1px solid=
+ #E7E8EB;border-radius:50%;text-align:center;line-height:30px;"></div>
+                    </td>
+                    <td valign=3D"middle" style=3D"padding:11px 0;">
+                      <p style=3D"font-family:'Inter',Arial,sans-serif; fon=
+t-weight:600; font-size:13px; color:#16161A; margin:0;">Mover saldo a tu bi=
+lletera</p>
+                      <p style=3D"font-family:'Inter',Arial,sans-serif; fon=
+t-size:11px; color:#9A9DA3; margin:1px 0 0 0;">Transfiere saldo a tu cuenta=
+ COP</p>
+                    </td>
+                    <td align=3D"right" valign=3D"middle" style=3D"font-fam=
+ily:'Inter',Arial,sans-serif; font-size:15px; color:#C3C5CA;">=E2=80=BA</td=
+>
+                  </tr>
+                </tbody></table>
+                <table role=3D"presentation" width=3D"100%" cellpadding=3D"=
+0" cellspacing=3D"0" style=3D"border-bottom:1px solid #F0F1F3;">
+                  <tbody><tr>
+                    <td width=3D"40" valign=3D"middle" style=3D"padding:12p=
+x 0;">
+                      <div style=3D"width:30px;height:30px;border:1px solid=
+ #E7E8EB;border-radius:50%;text-align:center;line-height:30px;"></div>
+                    </td>
+                    <td valign=3D"middle" style=3D"padding:11px 0;">
+                      <p style=3D"font-family:'Inter',Arial,sans-serif; fon=
+t-weight:600; font-size:13px; color:#16161A; margin:0;">Reactivar bolsillo<=
+/p>
+                      <p style=3D"font-family:'Inter',Arial,sans-serif; fon=
+t-size:11px; color:#9A9DA3; margin:1px 0 0 0;">Habilita los pagos de este b=
+olsillo</p>
+                    </td>
+                    <td align=3D"right" valign=3D"middle" style=3D"font-fam=
+ily:'Inter',Arial,sans-serif; font-size:15px; color:#C3C5CA;">=E2=80=BA</td=
+>
+                  </tr>
+                </tbody></table>
+                <table role=3D"presentation" width=3D"100%" cellpadding=3D"=
+0" cellspacing=3D"0" style=3D"filter:blur(2.6px); -webkit-filter:blur(2.6px=
+); opacity:0.5;">
+                  <tbody><tr>
+                    <td width=3D"40" valign=3D"middle" style=3D"padding:12p=
+x 0;">
+                      <div style=3D"width:30px;height:30px;border:1px solid=
+ #E7E8EB;border-radius:50%;text-align:center;line-height:30px;"></div>
+                    </td>
+                    <td valign=3D"middle" style=3D"padding:11px 0;">
+                      <p style=3D"font-family:'Inter',Arial,sans-serif; fon=
+t-weight:600; font-size:13px; color:#16161A; margin:0;">Retirar efectivo</p=
+>
+                      <p style=3D"font-family:'Inter',Arial,sans-serif; fon=
+t-size:11px; color:#9A9DA3; margin:1px 0 0 0;">Saca efectivo en cualquier c=
+ajero</p>
+                    </td>
+                    <td align=3D"right" valign=3D"middle" style=3D"font-fam=
+ily:'Inter',Arial,sans-serif; font-size:15px; color:#C3C5CA;">=E2=80=BA</td=
+>
+                  </tr>
+                </tbody></table>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody></table>
+  </td>
+</tr>
+
+
+<tr>
+  <td style=3D"background:#fff; padding:40px 40px 16px 40px;">
+    <p style=3D"font-family:'Work Sans',Arial,sans-serif; font-weight:600; =
+font-size:20px; line-height:1.2; color:#000; margin:0;">C=C3=B3mo funciona<=
+/p>
+  </td>
+</tr>
+<tr>
+  <td style=3D"background:#fff; padding:8px 40px 40px 40px;">
+    <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cellspaci=
+ng=3D"0">
+      <tbody><tr>
+        <td valign=3D"top" style=3D"padding:8px 0;">
+          <p style=3D"font-family:'Inter',Arial,sans-serif; font-size:15px;=
+ line-height:1.62; color:#000; margin:0;">Entra al detalle del bolsillo que=
+ quieres pausar.</p>
+        </td>
+      </tr>
+      <tr>
+        <td valign=3D"top" style=3D"padding:8px 0;">
+          <p style=3D"font-family:'Inter',Arial,sans-serif; font-size:15px;=
+ line-height:1.62; color:#000; margin:0;">Toca &#34;Pausar bolsillo&#34; y =
+conf=C3=ADrmalo.</p>
+        </td>
+      </tr>
+      <tr>
+        <td valign=3D"top" style=3D"padding:8px 0;">
+          <p style=3D"font-family:'Inter',Arial,sans-serif; font-size:15px;=
+ line-height:1.62; color:#000; margin:0;">Mientras est=C3=A9 pausado, ningu=
+na compra se debita de ese bolsillo.</p>
+        </td>
+      </tr>
+      <tr>
+        <td valign=3D"top" style=3D"padding:8px 0;">
+          <p style=3D"font-family:'Inter',Arial,sans-serif; font-size:15px;=
+ line-height:1.62; color:#000; margin:0;">React=C3=ADvalo cuando quieras, d=
+esde el detalle del bolsillo.</p>
+        </td>
+      </tr>
+    </tbody></table>
+  </td>
+</tr>
+
+
+<tr>
+  <td style=3D"background:#fff; padding:0 40px 40px 40px;">
+    <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cellspaci=
+ng=3D"0" style=3D"background:#FFF7F3; border-radius:16px;">
+      <tbody><tr>
+        <td style=3D"padding:30px 28px 28px 28px;">
+          <p style=3D"font-family:'Work Sans',Arial,sans-serif; font-weight=
+:600; font-size:18px; line-height:1.2; color:#000; margin:0;">Preguntas fre=
+cuentes</p>
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"margin-top:14px;">
+            <tbody><tr>
+              <td style=3D"padding:0 0 14px 0; border-bottom:1px solid #F2D=
+FD5;">
+                <p style=3D"font-family:'Work Sans',Arial,sans-serif;font-w=
+eight:600;font-size:15px;color:#000;margin:0;">=C2=BFQu=C3=A9 pasa con mi s=
+aldo si pauso un bolsillo?</p>
+                <p style=3D"font-family:'Inter',Arial,sans-serif;font-size:=
+13px;line-height:1.6;color:#6a6a6a;margin:6px 0 0 0;">Nada. El saldo queda =
+&#34;congelado&#34;: no se mueve, no se resta de tu total y no vence m=C3=
+=A1s r=C3=A1pido.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style=3D"padding:14px 0; border-bottom:1px solid #F2DFD5;=
+">
+                <p style=3D"font-family:'Work Sans',Arial,sans-serif;font-w=
+eight:600;font-size:15px;color:#000;margin:0;">=C2=BFPuedo pausar todos mis=
+ bolsillos?</p>
+                <p style=3D"font-family:'Inter',Arial,sans-serif;font-size:=
+13px;line-height:1.6;color:#6a6a6a;margin:6px 0 0 0;">No. Siempre debe qued=
+ar al menos un bolsillo activo. Si intentas pausar el =C3=BAltimo, la app t=
+e lo impide.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style=3D"padding:14px 0 0 0;">
+                <p style=3D"font-family:'Work Sans',Arial,sans-serif;font-w=
+eight:600;font-size:15px;color:#000;margin:0;">=C2=BFQu=C3=A9 pasa si pago =
+y el bolsillo est=C3=A1 pausado?</p>
+                <p style=3D"font-family:'Inter',Arial,sans-serif;font-size:=
+13px;line-height:1.6;color:#6a6a6a;margin:6px 0 0 0;">Si no hay otro bolsil=
+lo que aplique, la compra se rechaza y te avisamos al instante con una noti=
+ficaci=C3=B3n para reactivarlo.</p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"margin-top:20px; border-top:1px solid #F2DFD5;">
+            <tbody><tr>
+              <td style=3D"padding-top:18px;">
+                <table role=3D"presentation" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"margin-top:14px;">
+                  <tbody><tr>
+         =20
+                  </tr>
+                </tbody></table>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody></table>
+  </td>
+</tr></tbody></table><table class=3D"html_block block-7" width=3D"100%" bor=
+der=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=
+=3D"mso-table-lspace:0;mso-table-rspace:0"><tbody><tr><td class=3D"pad"><di=
+v style=3D"font-family:'Source Sans Pro',Tahoma,Verdana,Segoe,sans-serif;te=
+xt-align:center" align=3D"center">
+<table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0">
+  <tbody><tr>
+    <td style=3D"padding: 20px 0 15px 0; font-family: 'Work Sans', -apple-s=
+ystem, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+      <h2 style=3D"margin: 0; font-size: 20px; font-weight: 600; color: #00=
+0000; text-align: center; font-family: 'Work Sans', -apple-system, BlinkMac=
+SystemFont, 'Segoe UI', Arial, sans-serif;">
+        =C2=BFNecesitas ayuda? Cont=C3=A1ctanos
+      </h2>
+    </td>
+  </tr>
+</tbody></table>
+
+
+<table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0" styl=
+e=3D"max-width: 600px; margin: 0 auto;">
+  <tbody><tr>
+
+    <td style=3D"width: 32%; padding: 20px 15px; background-color: #FFFFFF;=
+ border: 2px solid #FF5900; border-radius: 12px; vertical-align: top; text-=
+align: center;">
+
+      <div style=3D"width: 50px; height: 50px; background-color: #FF5900; b=
+order-radius: 50%; line-height: 50px; text-align: center; font-size: 26px; =
+margin: 0 auto 12px auto;">
+        =F0=9F=93=A7
+      </div>
+
+
+      <h3 style=3D"margin: 0 0 8px 0; font-size: 16px; font-weight: 700; co=
+lor: #FF5900; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, =
+'Segoe UI', Arial, sans-serif;">
+        Email
+      </h3>
+
+
+      <p style=3D"margin: 0 0 8px 0; font-size: 13px; line-height: 1.4; col=
+or: #000000; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, '=
+Segoe UI', Arial, sans-serif; word-break: break-word;">
+        <a href=3D"mailto:ayuda@getglim.com" style=3D"color: #000000; text-=
+decoration: none; font-family: 'Work Sans', -apple-system, BlinkMacSystemFo=
+nt, 'Segoe UI', Arial, sans-serif;">
+          ayuda@getglim.com
+        </a>
+      </p>
+
+
+      <p style=3D"margin: 0; font-size: 11px; line-height: 1.4; color: #666=
+666; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI=
+', Arial, sans-serif;">
+        Respuesta en 1-4 horas
+      </p>
+    </td>
+
+
+    <td style=3D"width: 2%;"></td>
+
+
+    <td style=3D"width: 32%; padding: 20px 15px; background-color: #FFFFFF;=
+ border: 2px solid #4D69FF; border-radius: 12px; vertical-align: top; text-=
+align: center;">
+
+      <div style=3D"width: 50px; height: 50px; background-color: #4D69FF; b=
+order-radius: 50%; line-height: 50px; text-align: center; font-size: 26px; =
+margin: 0 auto 12px auto;">
+        =F0=9F=92=AC
+      </div>
+
+
+      <h3 style=3D"margin: 0 0 8px 0; font-size: 16px; font-weight: 700; co=
+lor: #4D69FF; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, =
+'Segoe UI', Arial, sans-serif;">
+        WhatsApp
+      </h3>
+
+
+      <p style=3D"margin: 0 0 8px 0; font-size: 13px; line-height: 1.4; col=
+or: #000000; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, '=
+Segoe UI', Arial, sans-serif; word-break: break-word;">
+        <a href=3D"http://email.getglim.com/e/c/eyJlbWFpbF9pZCI6ImRnUzd5UWd=
+CQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjoiaHR0cHM6Ly93YS5tZS=
+81NzMwMDk4NzI3NzAiLCJpbnRlcm5hbCI6ImJiYzkwODAxYmQyOWVlOTMwMiIsImxpbmtfaWQiO=
+jU1OTF9/a45bf55c1b7bf106ed96ef27731a556a306ac3cf41737e653e8fbe43b9678754" s=
+tyle=3D"color: #000000; text-decoration: none; font-family: 'Work Sans', -a=
+pple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+          +57 300 987 2770
+        </a>
+      </p>
+
+
+      <p style=3D"margin: 0; font-size: 11px; line-height: 1.4; color: #666=
+666; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI=
+', Arial, sans-serif;">
+        Respuesta inmediata =E2=9A=A1
+      </p>
+    </td>
+
+
+    <td style=3D"width: 2%;"></td>
+
+
+    <td style=3D"width: 32%; padding: 20px 15px; background-color: #FFFFFF;=
+ border: 2px solid #FF5900; border-radius: 12px; vertical-align: top; text-=
+align: center;">
+
+      <div style=3D"width: 50px; height: 50px; background-color: #FF5900; b=
+order-radius: 50%; line-height: 50px; text-align: center; font-size: 26px; =
+margin: 0 auto 12px auto;">
+        =F0=9F=93=9A
+      </div>
+
+
+      <h3 style=3D"margin: 0 0 8px 0; font-size: 16px; font-weight: 700; co=
+lor: #FF5900; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, =
+'Segoe UI', Arial, sans-serif;">
+        Centro de Ayuda
+      </h3>
+
+
+      <p style=3D"margin: 0 0 8px 0; font-size: 13px; line-height: 1.4; col=
+or: #000000; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, '=
+Segoe UI', Arial, sans-serif; word-break: break-word;">
+        <a href=3D"http://email.getglim.com/e/c/eyJlbWFpbF9pZCI6ImRnUzd5UWd=
+CQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjoiaHR0cHM6Ly9heXVkYS=
+5nZXRnbGltLmNvbSIsImludGVybmFsIjoiYmJjOTA4MDFiZDI5ZWU5MzAyIiwibGlua19pZCI6M=
+TR9/c06430fc6d35fdd02ba6cc1c6d8ca691a3ad11ab5aff3659d4d8a4b132bcfa7f" style=
+=3D"color: #000000; text-decoration: none; font-family: 'Work Sans', -apple=
+-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+          ayuda.getglim.com
+        </a>
+      </p>
+
+
+      <p style=3D"margin: 0; font-size: 11px; line-height: 1.4; color: #666=
+666; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI=
+', Arial, sans-serif;">
+        Gu=C3=ADas y tutoriales
+      </p>
+    </td>
+  </tr>
+</tbody></table>
+
+
+<table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0">
+  <tbody><tr>
+    <td style=3D"height: 15px;"></td>
+  </tr>
+</tbody></table>
+
+
+<table width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0" styl=
+e=3D"max-width: 600px; margin: 0 auto;">
+  <tbody><tr>
+    <td style=3D"background-color: #FFFFFF; border-left: 4px solid #4D69FF;=
+ padding: 15px; border-radius: 6px; text-align: center;">
+      <p style=3D"margin: 0; font-size: 14px; line-height: 1.6; color: #000=
+000; font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI=
+', Arial, sans-serif;">
+        =F0=9F=92=A1 Estamos aqu=C3=AD para ayudarte. Escoge el canal que p=
+refieras.
+      </p>
+    </td>
+  </tr>
+</tbody></table></div></td></tr></tbody></table><table class=3D"html_block =
+block-8" width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" ro=
+le=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0"><tbody>=
+<tr><td class=3D"pad"><div style=3D"font-family:'Source Sans Pro',Tahoma,Ve=
+rdana,Segoe,sans-serif;text-align:center" align=3D"center"></div></td></tr>=
+</tbody></table><table class=3D"heading_block block-9" width=3D"100%" borde=
+r=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"=
+mso-table-lspace:0;mso-table-rspace:0"><tbody><tr><td class=3D"pad" style=
+=3D"width:100%;padding-top:20px;padding-bottom:40px" align=3D"center"><h3 s=
+tyle=3D"margin:0;color:#000;direction:ltr;font-family:'Source Sans Pro',Tah=
+oma,Verdana,Segoe,sans-serif;font-size:17px;font-weight:400;letter-spacing:=
+normal;line-height:1.2;text-align:center;margin-top:0;margin-bottom:0;mso-l=
+ine-height-alt:20px">
+<span class=3D"tinyMce-placeholder" style=3D"word-break: break-word;">Recue=
+rda que estamos aqu=C3=AD para solucionar cualquier duda que tengas, escrib=
+e a nuestro centro de ayuda. Estaremos muy pendientes para ayudarte en el p=
+roceso.=C2=A0<br/><a href=3D"http://email.getglim.com/e/c/eyJlbWFpbF9pZCI6I=
+mRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjoiaHR0cHM6=
+Ly9heXVkYS5nZXRnbGltLmNvbSIsImludGVybmFsIjoiYmJjOTA4MDFiZDI5ZWU5MzAyIiwibGl=
+ua19pZCI6MTR9/c06430fc6d35fdd02ba6cc1c6d8ca691a3ad11ab5aff3659d4d8a4b132bcf=
+a7f" target=3D"_blank" rel=3D"noopener" style=3D"text-decoration: underline=
+; color: #ff5900;">Consulta nuestro Centro de Ayuda o comun=C3=ADcate con n=
+osotros</a></span></h3></td></tr></tbody></table></td></tr></tbody></table>=
+</td></tr>
+</tbody></table></td></tr></tbody></table><table class=3D"row row-2" align=
+=3D"center" width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0"=
+ role=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0;backg=
+round-color:#f7f8fa"><tbody><tr><td><table class=3D"row-content stack" alig=
+n=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"prese=
+ntation" style=3D"mso-table-lspace:0;mso-table-rspace:0;background-color:#0=
+00;color:#343446;width:505px;margin:0 auto" width=3D"505"><tbody><tr><td cl=
+ass=3D"column column-1" width=3D"100%" style=3D"mso-table-lspace:0;mso-tabl=
+e-rspace:0;font-weight:400;text-align:left;vertical-align:top"><table class=
+=3D"social_block block-1" width=3D"100%" border=3D"0" cellpadding=3D"10" ce=
+llspacing=3D"0" role=3D"presentation" style=3D"mso-table-lspace:0;mso-table=
+-rspace:0"><tbody><tr><td class=3D"pad" align=3D"center"><table class=3D"so=
+cial-table" width=3D"74px" border=3D"0" cellpadding=3D"0" cellspacing=3D"0"=
+ role=3D"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0"><tbo=
+dy><tr><td style=3D"padding:0"><a href=3D"http://email.getglim.com/e/c/eyJl=
+bWFpbF9pZCI6ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmV=
+mIjoiaHR0cHM6Ly93d3cuaW5zdGFncmFtLmNvbS9nZXRnbGltLmNvbC8iLCJpbnRlcm5hbCI6Im=
+JiYzkwODAxYmQyOWVlOTMwMiIsImxpbmtfaWQiOjQzNDB9/2ddf362cca825a6364fdeb504450=
+7a34921e3c9276ae43f740c91936ba062288" target=3D"_blank"><img src=3D"https:/=
+/app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-circle-whi=
+te/instagram@2x.png" width=3D"32" height=3D"auto" alt=3D"Instagram" title=
+=3D"Instagram" style=3D"display:block;height:auto;border:0"/></a></td><td s=
+tyle=3D"padding:0 0 0 10px"><a href=3D"http://email.getglim.com/e/c/eyJlbWF=
+pbF9pZCI6ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIj=
+oiaHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2NvbXBhbnkvZ2V0Z2xpbS8iLCJpbnRlcm5hbCI6I=
+mJiYzkwODAxYmQyOWVlOTMwMiIsImxpbmtfaWQiOjR9/5ef7e2a997f467b78c3e1509f2ab82d=
+caefce6ce147bfebea7d668ef678365be" target=3D"_blank"><img src=3D"https://ap=
+p-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-circle-white/=
+linkedin@2x.png" width=3D"32" height=3D"auto" alt=3D"LinkedIn" title=3D"Lin=
+kedIn" style=3D"display:block;height:auto;border:0"/></a></td></tr></tbody>=
+</table></td></tr></tbody></table><table class=3D"text_block block-2" width=
+=3D"100%" border=3D"0" cellpadding=3D"5" cellspacing=3D"0" role=3D"presenta=
+tion" style=3D"mso-table-lspace:0;mso-table-rspace:0;word-break:break-word"=
+><tbody><tr><td class=3D"pad"><div style=3D"font-family:sans-serif"><div cl=
+ass=3D"" style=3D"font-size:12px;font-family:'Source Sans Pro',Tahoma,Verda=
+na,Segoe,sans-serif;mso-line-height-alt:14.399999999999999px;color:#fff;lin=
+e-height:1.2"><p style=3D"margin:0;font-size:12px;text-align:center;mso-lin=
+e-height-alt:14.399999999999999px">
+<strong><span style=3D"word-break: break-word; font-size: 14px;"><a href=3D=
+"http://email.getglim.com/e/c/eyJlbWFpbF9pZCI6ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ=
+21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjoiaHR0cHM6Ly9nZXRnbGltLmNvbS8iLCJpbnRl=
+cm5hbCI6ImJiYzkwODAxYmQyOWVlOTMwMiIsImxpbmtfaWQiOjUxOTJ9/816af3196b87e6d325=
+d9ae7257d9f46282f7b3623bb92cd3981c18e41cf1549c" target=3D"_blank" style=3D"=
+text-decoration: underline; color: #ffffff;" rel=3D"noopener">Sobre Glim</a=
+> =C2=A0 =C2=A0 <u><a href=3D"http://email.getglim.com/e/c/eyJlbWFpbF9pZCI6=
+ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjoiaHR0cHM=
+6Ly9nZXRnbGltLmNvbS90ZXJtaW5vcy15LWNvbmRpY2lvbmVzLyIsImludGVybmFsIjoiYmJjOT=
+A4MDFiZDI5ZWU5MzAyIiwibGlua19pZCI6MTN9/d157d37760b2b65da6fe9c13f5531f969a4f=
+159397a5f05260bc4bb55563a0e8" target=3D"_blank" style=3D"text-decoration: n=
+one; color: #ffffff;" rel=3D"noopener">T&amp;C</a></u>=C2=A0 =C2=A0 =C2=A0<=
+a href=3D"http://email.getglim.com/e/c/eyJlbWFpbF9pZCI6ImRnUzd5UWdCQU82VEF1=
+MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0iLCJocmVmIjoiaHR0cHM6Ly9heXVkYS5nZXRnbGl=
+tLmNvbSIsImludGVybmFsIjoiYmJjOTA4MDFiZDI5ZWU5MzAyIiwibGlua19pZCI6MTR9/c0643=
+0fc6d35fdd02ba6cc1c6d8ca691a3ad11ab5aff3659d4d8a4b132bcfa7f" target=3D"_bla=
+nk" style=3D"text-decoration: none; color: #ffffff;" rel=3D"noopener"><u>Ce=
+ntro de Ayuda</u></a></span></strong>
+</p></div></div></td></tr></tbody></table><table class=3D"text_block block-=
+3" width=3D"100%" border=3D"0" cellpadding=3D"15" cellspacing=3D"0" role=3D=
+"presentation" style=3D"mso-table-lspace:0;mso-table-rspace:0;word-break:br=
+eak-word"><tbody><tr><td class=3D"pad"><div style=3D"font-family:sans-serif=
+"><div class=3D"" style=3D"font-size:12px;font-family:'Source Sans Pro',Tah=
+oma,Verdana,Segoe,sans-serif;mso-line-height-alt:14.399999999999999px;color=
+:#fff;line-height:1.2"><p style=3D"margin:0;font-size:12px;text-align:cente=
+r;mso-line-height-alt:14.399999999999999px">=C2=BFNo quieres recibir m=C3=
+=A1s correos? Darse de baja <a href=3D"http://email.getglim.com/unsubscribe=
+/dgS7yQgBAO6TAu2TAgGfCmn33l77HnoujILy3vk=3D" target=3D"_blank" rel=3D"noope=
+ner" style=3D"color: #ffffff;">aqu=C3=AD</a>.=C2=A0 Recibes estos mensajes =
+porque tienes acceso a nuestros beneficios a trav=C3=A9s de Mercado Libre C=
+olombia Ltda.<br/><br/>=C2=A92026 =C2=A0 Glim Colombia SAS. Bogot=C3=A1, Co=
+lombia.</p></div></div></td></tr></tbody></table></td></tr></tbody></table>=
+</td></tr></tbody></table></td></tr></tbody>
+</table><!-- End --><img src=3D"http://email.getglim.com/e/o/eyJlbWFpbF9pZC=
+I6ImRnUzd5UWdCQU82VEF1MlRBZ0dmQ21uMzNsNzdIbm91aklMeTN2az0ifQ=3D=3D" style=
+=3D"height: 1px !important; max-height: 1px !important; max-width: 1px !imp=
+ortant; width: 1px !important; display: none !important;" alt=3D""/></body>=
+</html>
+--6e45ad4b1d1d9c1d6322871d4f9304ac059f1fe5fc795ca84d309fc474f1--
