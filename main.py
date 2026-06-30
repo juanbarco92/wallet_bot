@@ -17,6 +17,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize GCP Cloud Logging if running inside Google Cloud
+try:
+    import google.cloud.logging
+    client = google.cloud.logging.Client()
+    client.setup_logging()
+    logger.info("Google Cloud Logging successfully initialized and integrated.")
+except Exception as e:
+    logger.info(f"Google Cloud Logging not initialized (expected for local environment): {e}")
+
 load_dotenv()
 
 async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, parser: TransactionParser, loader: SheetsLoader, processing_emails: set):
@@ -45,6 +54,18 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
         text_to_parse = email_data.get('body') or email_data.get('snippet', '')
         transaction = parser.parse(text_to_parse)
         
+        # Log deep warning if parsing is incomplete or ambiguous
+        if transaction.get('merchant') == 'UNKNOWN' or transaction.get('amount', 0.0) == 0.0:
+            headers = email_data.get('payload', {}).get('headers', [])
+            from_hdr = next((h['value'] for h in headers if h['name'].lower() == 'from'), "unknown")
+            subject_hdr = next((h['value'] for h in headers if h['name'].lower() == 'subject'), "unknown")
+            logger.warning(
+                f"Transaction parsed with UNKNOWN merchant or 0.0 amount! "
+                f"Email ID: {email_id} | From: {from_hdr} | Subject: {subject_hdr} | "
+                f"Parsed Amount: {transaction.get('amount')} | Parsed Merchant: {transaction.get('merchant')} | "
+                f"Raw Text: {text_to_parse!r}"
+            )
+            
         if not transaction['amount'] and not transaction['merchant']:
             logger.warning(f"Could not parse transaction from email {email_id}")
             # Mark as read to avoid loop? Or skip?
@@ -98,8 +119,10 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                              msg_text += f"\n• *{category}*: ${split_amount:,.2f}"
 
                     await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                    # Effectively send the 'guardado' message so a notification is triggered
+                    await current_bot.application.bot.send_message(chat_id=target_chat_id, text="guardado")
                 except Exception as e:
-                    logger.error(f"Failed to edit completion message: {e}")
+                    logger.error(f"Failed to edit completion message or send guardado: {e}")
 
         else:
             logger.warning(f"Skipping mark_as_read for email {email_id} due to save failure.")

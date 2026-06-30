@@ -30,9 +30,9 @@ class TransactionParser:
         # Format A: "en MERCHANT con" (Purchases)
         # Format B: "a MERCHANT el" (Transfers)
         self.merchant_patterns = [
-            r"Comercio\n\s*(.*?)\n", # RappiCard
+            r"Comercio\s+(.*?)\s*\r?\n", # RappiCard
             r"\ben\s+(.*?)\s+(?:con|si tienes dudas)",
-            r"\ba\s+(.*?)\s+el\s+\d{2}/\d{2}",
+            r"\ba\s+(.*?)\s*,?\s*el\s+(?:\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}|\d{2}/\d{2}|\d{4}-\d{2}-\d{2})",
             r"a la llave\s+(@?[\w\d]+)", # Covers QR and Transfers to Key
             r"Retiraste\s+[\d\.,\s\$]+en\s+(.*?)\s+de tu", # Withdrawals
             r"pago Factura Programada\s+(.*?)(?:\s+Ref|\s+por)", # Facturas Programadas
@@ -43,8 +43,9 @@ class TransactionParser:
         # Format A: "11/12/2025 a las 15:51" or "30/12/2025."
         # Format B: "12/12/2025 10:00"
         # Format C: "2025-12-17 15:22:22" (Rappi)
+        # Format D: "2025/11/04 12:30" (or YYYY/MM/DD with optional HH:MM)
         # Note: Time group 2 is now optional inside the first branch
-        self.date_pattern = r"(?:(\d{2}/\d{2}/\d{4})(?:(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2}))?)|(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
+        self.date_pattern = r"(?:(\d{2}/\d{2}/\d{4})(?:(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2}))?)|(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})|(\d{4}/\d{2}/\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)"
 
     def parse(self, text: str) -> Dict:
         """Parses the email body/snippet to extract transaction details."""
@@ -81,7 +82,7 @@ class TransactionParser:
         """Original Regex Logic"""
         
         # 1. Extract Amount
-        amount_match = re.search(self.amount_pattern, text)
+        amount_match = re.search(self.amount_pattern, text, re.IGNORECASE)
         amount = 0.0
         if amount_match:
             # Normalize amount string
@@ -133,16 +134,15 @@ class TransactionParser:
         # 2. Extract Merchant (Try patterns)
         merchant = "UNKNOWN"
         for pattern in self.merchant_patterns:
-            match = re.search(pattern, text)
+            match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 merchant = match.group(1).strip().upper()
                 break # Stop after first match
 
         # 3. Extract Date
-        date_match = re.search(self.date_pattern, text)
+        date_match = re.search(self.date_pattern, text, re.IGNORECASE)
         date_str = ""
         if date_match:
-
             if date_match.group(1):
                 # Format A (DD/MM/YYYY [HH:MM])
                 date_part = date_match.group(1)
@@ -157,6 +157,19 @@ class TransactionParser:
                 # normalize to DD/MM/YYYY HH:MM
                 dt_obj = datetime.strptime(date_match.group(3), "%Y-%m-%d %H:%M:%S")
                 date_str = dt_obj.strftime("%d/%m/%Y %H:%M")
+            elif len(date_match.groups()) >= 4 and date_match.group(4):
+                # Format D (YYYY/MM/DD [HH:MM[:SS]])
+                raw_dt = date_match.group(4).strip()
+                # Remove optional seconds if present
+                raw_dt = re.sub(r':\d{2}$', '', raw_dt)
+                try:
+                    if len(raw_dt) > 10:
+                        dt_obj = datetime.strptime(raw_dt, "%Y/%m/%d %H:%M")
+                    else:
+                        dt_obj = datetime.strptime(raw_dt, "%Y/%m/%d")
+                    date_str = dt_obj.strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    date_str = datetime.now().strftime("%d/%m/%Y %H:%M")
         else:
             # Fallback to now if not found
             date_str = datetime.now().strftime("%d/%m/%Y %H:%M")

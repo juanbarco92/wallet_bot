@@ -228,6 +228,7 @@ class TransactionsBot:
             
             if success:
                 session["saved_count"] += 1
+                await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text="guardado")
             else:
                 await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text=f"⚠️ Error guardando {item['name']}")
         
@@ -452,10 +453,13 @@ class TransactionsBot:
                         await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
                     else:
                         await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
+                    # Effectively send the 'guardado' message so a notification is triggered
+                    await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="guardado")
                 except Exception as e:
-                     logger.error(f"Failed to edit confirmation message: {e}")
+                     logger.error(f"Failed to edit confirmation message or send guardado: {e}")
                      # Fallback
                      await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
+                     await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="guardado")
             else:
                  msg_err = "⚠️ Error al guardar en Google Sheets."
                  try:

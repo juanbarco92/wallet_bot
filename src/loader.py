@@ -92,8 +92,19 @@ class SheetsLoader:
                 description
             ]
             
-            self.sheet.append_row(row, value_input_option='USER_ENTERED')
-            print(f"Successfully added row: {row}")
+            # Find the actual last row of data in Column A to prevent issues with filters and ghost rows
+            col_a_values = self.sheet.col_values(1)
+            next_row = len(col_a_values) + 1
+            
+            # Ensure the sheet has enough rows to hold the new record
+            row_count = self.sheet.row_count
+            if next_row > row_count:
+                print(f"Row {next_row} exceeds grid limit {row_count}. Adding 100 rows explicitly...")
+                self.sheet.add_rows(100)
+            
+            # Write row using update
+            self.sheet.update(range_name=f"A{next_row}:I{next_row}", values=[row], value_input_option='USER_ENTERED')
+            print(f"Successfully updated row {next_row}: {row}")
             return True
             
         except Exception as e:
