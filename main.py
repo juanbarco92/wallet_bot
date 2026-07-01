@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import logging
 import traceback
 from aiohttp import web
@@ -152,8 +153,15 @@ async def tasker_webhook_handler(request):
             data = await request.json()
         except Exception as json_err:
             raw_body = await request.text()
-            logger.error(f"Malformed JSON in tasker webhook: {json_err}. Raw body: {raw_body!r}")
-            return web.json_response({"error": "Malformed JSON"}, status=400)
+            logger.warning(f"Malformed JSON in tasker webhook: {json_err}. Attempting regex fallback on raw body.")
+            texto_match = re.search(r'"texto"\s*:\s*"(.*?)"\s*}?\s*$', raw_body, re.DOTALL)
+            if texto_match:
+                texto = texto_match.group(1)
+                texto = texto.replace('\\n', '\n').replace('\\r', '\r')
+                data = {"texto": texto}
+            else:
+                logger.error(f"Failed to parse text via regex fallback. Raw body: {raw_body!r}")
+                return web.json_response({"error": "Malformed JSON"}, status=400)
 
         secret = request.headers.get("Authorization")
         

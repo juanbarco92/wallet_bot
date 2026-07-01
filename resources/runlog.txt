@@ -1,0 +1,560 @@
+
+20260405 00.14.02 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260405 00.14.02 E Start    ID0:0.0  TaskService
+20260405 00.14.02 T Running  ID4      TaskNu
+20260405 00.14.02 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260405 00.14.02 A OK       ID4.2    TaskNu.Write File
+20260405 00.14.02 T ExitOK   ID4      TaskNu
+20260405 00.14.02 E Stop     ID0:0.0  TaskService
+20260405 19.32.48 E Start    ID0:0.0  TaskService
+20260405 19.32.49 E Stop     ID0:0.0  TaskService
+20260406 08.23.07 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260406 08.23.07 E Start    ID0:0.0  TaskService
+20260406 08.23.07 T Running  ID4      TaskNu
+20260406 08.23.13 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260406 08.23.13 A OK       ID4.2    TaskNu.Write File
+20260406 08.23.13 T ExitOK   ID4      TaskNu
+20260406 08.23.13 E Stop     ID0:0.0  TaskService
+20260406 12.11.14 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260406 12.11.14 E Start    ID0:0.0  TaskService
+20260406 12.11.14 T Running  ID4      TaskNu
+20260406 12.11.20 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260406 12.11.20 A OK       ID4.2    TaskNu.Write File
+20260406 12.11.20 T ExitOK   ID4      TaskNu
+20260406 12.11.20 E Stop     ID0:0.0  TaskService
+20260407 21.25.52 M Start    ID0:0.0  Monitor
+20260409 13.06.00 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260409 13.06.00 E Start    ID0:0.0  TaskService
+20260409 13.06.01 T Running  ID4      TaskNu
+20260409 13.06.31 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260409 13.06.31 A OK       ID4.2    TaskNu.Write File
+20260409 13.06.31 T ExitOK   ID4      TaskNu
+20260409 13.06.31 E Stop     ID0:0.0  TaskService
+20260410 12.38.27 M Start    ID0:0.0  Monitor
+20260410 17.28.28 M Start    ID0:0.0  Monitor
+20260410 17.32.55 M Start    ID0:0.0  Monitor
+20260410 17.49.33 M Start    ID0:0.0  Monitor
+20260411 22.15.09 M Start    ID0:0.0  Monitor
+20260414 07.00.37 M Start    ID0:0.0  Monitor
+20260415 10.18.42 M Start    ID0:0.0  Monitor
+20260415 14.25.38 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260415 14.25.38 E Start    ID0:0.0  TaskService
+20260415 14.25.38 T Running  ID4      TaskNu
+20260415 14.25.45 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260415 14.25.45 A OK       ID4.2    TaskNu.Write File
+20260415 14.25.45 T ExitOK   ID4      TaskNu
+20260415 14.25.45 E Stop     ID0:0.0  TaskService
+20260423 06.42.51 M Start    ID0:0.0  Monitor
+20260426 07.55.53 M Start    ID0:0.0  Monitor
+20260429 18.58.06 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260429 18.58.06 E Start    ID0:0.0  TaskService
+20260429 18.58.06 T Running  ID4      TaskNu
+20260429 18.58.06 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260429 18.58.06 A OK       ID4.2    TaskNu.Write File
+20260429 18.58.06 T ExitOK   ID4      TaskNu
+20260429 18.58.06 E Stop     ID0:0.0  TaskService
+20260504 06.29.07 M Start    ID0:0.0  Monitor
+20260505 07.36.59 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260505 07.36.59 E Start    ID0:0.0  TaskService
+20260505 07.36.59 T Running  ID4      TaskNu
+20260505 07.37.05 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260505 07.37.05 A OK       ID4.2    TaskNu.Write File
+20260505 07.37.05 T ExitOK   ID4      TaskNu
+20260505 07.37.05 E Stop     ID0:0.0  TaskService
+20260505 10.47.03 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260505 10.47.03 E Start    ID0:0.0  TaskService
+20260505 10.47.03 T Running  ID4      TaskNu
+20260505 10.47.03 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260505 10.47.03 A OK       ID4.2    TaskNu.Write File
+20260505 10.47.03 T ExitOK   ID4      TaskNu
+20260505 10.47.03 E Stop     ID0:0.0  TaskService
+20260508 14.51.52 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260508 14.51.52 E Start    ID0:0.0  TaskService
+20260508 14.51.52 T Running  ID4      TaskNu
+20260508 14.51.53 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260508 14.51.53 A OK       ID4.2    TaskNu.Write File
+20260508 14.51.53 T ExitOK   ID4      TaskNu
+20260508 14.51.53 E Stop     ID0:0.0  TaskService
+20260510 18.03.35 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260510 18.03.35 E Start    ID0:0.0  TaskService
+20260510 18.03.35 T Running  ID4      TaskNu
+20260510 18.03.35 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260510 18.03.35 A OK       ID4.2    TaskNu.Write File
+20260510 18.03.35 T ExitOK   ID4      TaskNu
+20260510 18.03.35 E Stop     ID0:0.0  TaskService
+20260513 06.56.32 M Start    ID0:0.0  Monitor
+20260519 20.23.34 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260519 20.23.34 E Start    ID0:0.0  TaskService
+20260519 20.23.34 T Running  ID4      TaskNu
+20260519 20.23.34 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260519 20.23.34 A OK       ID4.2    TaskNu.Write File
+20260519 20.23.34 T ExitOK   ID4      TaskNu
+20260519 20.23.35 E Stop     ID0:0.0  TaskService
+20260519 21.43.12 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260519 21.43.12 E Start    ID0:0.0  TaskService
+20260519 21.43.12 T Running  ID4      TaskNu
+20260519 21.43.17 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260519 21.43.17 A OK       ID4.2    TaskNu.Write File
+20260519 21.43.17 T ExitOK   ID4      TaskNu
+20260519 21.43.17 E Stop     ID0:0.0  TaskService
+20260521 07.00.23 M Start    ID0:0.0  Monitor
+20260522 13.10.34 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260522 13.10.34 E Start    ID0:0.0  TaskService
+20260522 13.10.34 T Running  ID4      TaskNu
+20260522 13.10.35 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260522 13.10.35 A OK       ID4.2    TaskNu.Write File
+20260522 13.10.35 T ExitOK   ID4      TaskNu
+20260522 13.10.35 E Stop     ID0:0.0  TaskService
+20260523 11.51.44 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260523 11.51.44 E Start    ID0:0.0  TaskService
+20260523 11.51.44 T Running  ID4      TaskNu
+20260523 11.51.44 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260523 11.51.45 A OK       ID4.2    TaskNu.Write File
+20260523 11.51.45 T ExitOK   ID4      TaskNu
+20260523 11.51.45 E Stop     ID0:0.0  TaskService
+20260523 13.17.57 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260523 13.17.57 E Start    ID0:0.0  TaskService
+20260523 13.17.57 T Running  ID4      TaskNu
+20260523 13.17.59 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260523 13.18.00 A OK       ID4.2    TaskNu.Write File
+20260523 13.18.00 T ExitOK   ID4      TaskNu
+20260523 13.18.00 E Stop     ID0:0.0  TaskService
+20260525 07.22.29 M Start    ID0:0.0  Monitor
+20260527 07.26.15 M Start    ID0:0.0  Monitor
+20260529 22.55.47 M Start    ID0:0.0  Monitor
+20260531 07.22.14 M Start    ID0:0.0  Monitor
+20260531 22.11.30 M Start    ID0:0.0  Monitor
+20260601 20.38.20 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260601 20.38.20 E Start    ID0:0.0  TaskService
+20260601 20.38.20 T Running  ID4      TaskNu
+20260601 20.38.20 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260601 20.38.20 A OK       ID4.2    TaskNu.Write File
+20260601 20.38.20 T ExitOK   ID4      TaskNu
+20260601 20.38.20 E Stop     ID0:0.0  TaskService
+20260601 22.07.05 E Start    ID0:0.0  TaskService
+20260601 22.07.13 E Stop     ID0:0.0  TaskService
+20260601 22.07.21 E Start    ID0:0.0  TaskService
+20260601 22.07.23 E Stop     ID0:0.0  TaskService
+20260601 22.07.28 E Start    ID0:0.0  TaskService
+20260601 22.07.29 E Stop     ID0:0.0  TaskService
+20260601 22.07.36 E Start    ID0:0.0  TaskService
+20260601 22.07.47 T Running  ID4      TaskNu
+20260601 22.08.17 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260601 22.08.17 A OK       ID4.2    TaskNu.Write File
+20260601 22.08.17 T ExitOK   ID4      TaskNu
+20260601 22.08.17 E Stop     ID0:0.0  TaskService
+20260601 22.08.18 E Start    ID0:0.0  TaskService
+20260601 22.08.22 E Stop     ID0:0.0  TaskService
+20260601 22.08.23 E Start    ID0:0.0  TaskService
+20260601 22.08.31 E Stop     ID0:0.0  TaskService
+20260601 22.08.34 M Restart  ID0:0.0  Monitor
+20260602 14.18.39 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260602 14.18.39 E Start    ID0:0.0  TaskService
+20260602 14.18.39 T Running  ID4      TaskNu
+20260602 14.18.44 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260602 14.18.44 A OK       ID4.2    TaskNu.Write File
+20260602 14.18.44 T ExitOK   ID4      TaskNu
+20260602 14.18.44 E Stop     ID0:0.0  TaskService
+20260602 14.50.53 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260602 14.50.53 E Start    ID0:0.0  TaskService
+20260602 14.50.53 T Running  ID4      TaskNu
+20260602 14.50.54 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260602 14.50.54 A OK       ID4.2    TaskNu.Write File
+20260602 14.50.54 T ExitOK   ID4      TaskNu
+20260602 14.50.54 E Stop     ID0:0.0  TaskService
+20260603 10.40.47 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260603 10.40.47 E Start    ID0:0.0  TaskService
+20260603 10.40.47 T Running  ID4      TaskNu
+20260603 10.40.47 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260603 10.40.47 A OK       ID4.2    TaskNu.Write File
+20260603 10.40.47 T ExitOK   ID4      TaskNu
+20260603 10.40.47 E Stop     ID0:0.0  TaskService
+20260603 20.36.14 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260603 20.36.14 E Start    ID0:0.0  TaskService
+20260603 20.36.14 T Running  ID4      TaskNu
+20260603 20.36.18 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260603 20.36.18 A OK       ID4.2    TaskNu.Write File
+20260603 20.36.18 T ExitOK   ID4      TaskNu
+20260603 20.36.18 E Stop     ID0:0.0  TaskService
+20260605 11.26.59 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260605 11.26.59 E Start    ID0:0.0  TaskService
+20260605 11.26.59 T Running  ID4      TaskNu
+20260605 11.27.29 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260605 11.27.29 A OK       ID4.2    TaskNu.Write File
+20260605 11.27.29 T ExitOK   ID4      TaskNu
+20260605 11.27.29 E Stop     ID0:0.0  TaskService
+20260609 13.39.21 M Start    ID0:0.0  Monitor
+20260609 14.52.59 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260609 14.52.59 E Start    ID0:0.0  TaskService
+20260609 14.52.59 T Running  ID4      TaskNu
+20260609 14.52.59 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260609 14.52.59 A OK       ID4.2    TaskNu.Write File
+20260609 14.52.59 T ExitOK   ID4      TaskNu
+20260609 14.52.59 E Stop     ID0:0.0  TaskService
+20260610 19.14.45 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260610 19.14.45 E Start    ID0:0.0  TaskService
+20260610 19.14.45 T Running  ID4      TaskNu
+20260610 19.15.06 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260610 19.15.06 A OK       ID4.2    TaskNu.Write File
+20260610 19.15.06 T ExitOK   ID4      TaskNu
+20260610 19.15.06 E Stop     ID0:0.0  TaskService
+20260616 12.51.27 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260616 12.51.27 E Start    ID0:0.0  TaskService
+20260616 12.51.27 T Running  ID4      TaskNu
+20260616 12.51.27 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260616 12.51.27 A OK       ID4.2    TaskNu.Write File
+20260616 12.51.27 T ExitOK   ID4      TaskNu
+20260616 12.51.27 E Stop     ID0:0.0  TaskService
+20260616 16.37.44 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260616 16.37.44 E Start    ID0:0.0  TaskService
+20260616 16.37.44 T Running  ID4      TaskNu
+20260616 16.37.48 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260616 16.37.48 A OK       ID4.2    TaskNu.Write File
+20260616 16.37.48 T ExitOK   ID4      TaskNu
+20260616 16.37.48 E Stop     ID0:0.0  TaskService
+20260617 15.24.42 M Start    ID0:0.0  Monitor
+20260619 11.58.24 P Instant  ID3      Notification Nu, *$*, event, New Only
+20260619 11.58.24 E Start    ID0:0.0  TaskService
+20260619 11.58.24 T Running  ID4      TaskNu
+20260619 11.58.25 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260619 11.58.25 A OK       ID4.2    TaskNu.Write File
+20260619 11.58.25 T ExitOK   ID4      TaskNu
+20260619 11.58.25 E Stop     ID0:0.0  TaskService
+20260623 18.33.47 M Start    ID0:0.0  Monitor
+20260629 20.46.07 E Start    ID0:0.0  TaskService
+20260629 20.46.11 E Stop     ID0:0.0  TaskService
+20260629 20.46.12 E Start    ID0:0.0  TaskService
+20260629 20.46.17 E Stop     ID0:0.0  TaskService
+20260629 20.46.21 E Start    ID0:0.0  TaskService
+20260629 20.46.24 E Stop     ID0:0.0  TaskService
+20260629 20.46.26 M Restart  ID0:0.0  Monitor
+20260629 21.04.36 E Start    ID0:0.0  TaskService
+20260629 21.04.46 E Stop     ID0:0.0  TaskService
+20260629 21.17.06 M Restart  ID0:0.0  Monitor
+20260629 21.17.13 E Start    ID0:0.0  TaskService
+20260629 21.17.16 E Stop     ID0:0.0  TaskService
+20260629 21.17.17 E Start    ID0:0.0  TaskService
+20260629 21.17.19 E Stop     ID0:0.0  TaskService
+20260629 21.17.22 E Start    ID0:0.0  TaskService
+20260629 21.17.31 T Running  ID4      TaskNu
+20260629 21.17.35 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.17.35 A OK       ID4.2    TaskNu.Write File
+20260629 21.17.35 T ExitOK   ID4      TaskNu
+20260629 21.17.37 P Instant  ID3      Nu
+20260629 21.17.37 T Running  ID4:2    TaskNu
+20260629 21.17.37 A Err      ID4:2.1  TaskNu.HTTP Request, TaskNu
+20260629 21.17.37 A OK       ID4:2.2  TaskNu.Write File
+20260629 21.17.37 T ExitOK   ID4:2    TaskNu
+20260629 21.18.09 E Stop     ID0:0.0  TaskService
+20260629 21.25.16 P Instant  ID3      Nu
+20260629 21.25.16 E Start    ID0:0.0  TaskService
+20260629 21.25.16 T Running  ID4      TaskNu
+20260629 21.25.22 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.25.22 A OK       ID4.2    TaskNu.Write File
+20260629 21.25.22 T ExitOK   ID4      TaskNu
+20260629 21.25.22 E Stop     ID0:0.0  TaskService
+20260629 21.25.24 P Instant  ID3      Nu
+20260629 21.25.24 E Start    ID0:0.0  TaskService
+20260629 21.25.24 T Running  ID4      TaskNu
+20260629 21.25.24 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.25.24 A OK       ID4.2    TaskNu.Write File
+20260629 21.25.24 T ExitOK   ID4      TaskNu
+20260629 21.25.24 E Stop     ID0:0.0  TaskService
+20260629 21.25.28 P Instant  ID3      Nu
+20260629 21.25.28 E Start    ID0:0.0  TaskService
+20260629 21.25.28 P Instant  ID3      Nu
+20260629 21.25.28 T Running  ID4      TaskNu
+20260629 21.25.28 T RejCopy  ID4      TaskNu
+20260629 21.25.33 P Instant  ID3      Nu
+20260629 21.25.33 P Instant  ID3      Nu
+20260629 21.25.33 T RejCopy  ID4      TaskNu
+20260629 21.25.33 T RejCopy  ID4      TaskNu
+20260629 21.25.50 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.25.50 A OK       ID4.2    TaskNu.Write File
+20260629 21.25.50 T ExitOK   ID4      TaskNu
+20260629 21.25.50 E Stop     ID0:0.0  TaskService
+20260629 21.25.51 P Instant  ID3      Nu
+20260629 21.25.51 E Start    ID0:0.0  TaskService
+20260629 21.25.51 T Running  ID4      TaskNu
+20260629 21.25.51 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.25.51 A OK       ID4.2    TaskNu.Write File
+20260629 21.25.51 T ExitOK   ID4      TaskNu
+20260629 21.25.51 E Stop     ID0:0.0  TaskService
+20260629 21.26.08 E Start    ID0:0.0  TaskService
+20260629 21.26.23 E Stop     ID0:0.0  TaskService
+20260629 21.29.06 P Instant  ID3      Nu
+20260629 21.29.06 E Start    ID0:0.0  TaskService
+20260629 21.29.06 P Instant  ID3      Nu
+20260629 21.29.06 P Instant  ID3      Nu
+20260629 21.29.06 T Running  ID4      TaskNu
+20260629 21.29.06 T RejCopy  ID4      TaskNu
+20260629 21.29.06 T RejCopy  ID4      TaskNu
+20260629 21.29.10 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.29.10 A OK       ID4.2    TaskNu.Write File
+20260629 21.29.10 T ExitOK   ID4      TaskNu
+20260629 21.29.10 E Stop     ID0:0.0  TaskService
+20260629 21.29.19 P Instant  ID3      Nu
+20260629 21.29.19 E Start    ID0:0.0  TaskService
+20260629 21.29.19 T Running  ID4      TaskNu
+20260629 21.29.19 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.29.19 A OK       ID4.2    TaskNu.Write File
+20260629 21.29.19 T ExitOK   ID4      TaskNu
+20260629 21.29.19 E Stop     ID0:0.0  TaskService
+20260629 21.29.48 P Instant  ID3      Nu
+20260629 21.29.48 E Start    ID0:0.0  TaskService
+20260629 21.29.48 T Running  ID4      TaskNu
+20260629 21.29.51 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.29.51 A OK       ID4.2    TaskNu.Write File
+20260629 21.29.51 T ExitOK   ID4      TaskNu
+20260629 21.29.51 E Stop     ID0:0.0  TaskService
+20260629 21.29.52 P Instant  ID3      Nu
+20260629 21.29.52 E Start    ID0:0.0  TaskService
+20260629 21.29.52 T Running  ID4      TaskNu
+20260629 21.29.52 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.29.52 A OK       ID4.2    TaskNu.Write File
+20260629 21.29.52 T ExitOK   ID4      TaskNu
+20260629 21.29.52 E Stop     ID0:0.0  TaskService
+20260629 21.36.12 P Instant  ID3      Nu
+20260629 21.36.12 E Start    ID0:0.0  TaskService
+20260629 21.36.12 P Instant  ID3      Nu
+20260629 21.36.12 T Running  ID4      TaskNu
+20260629 21.36.12 P Instant  ID3      Nu
+20260629 21.36.12 T RejCopy  ID4      TaskNu
+20260629 21.36.12 T RejCopy  ID4      TaskNu
+20260629 21.36.42 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.36.42 A OK       ID4.2    TaskNu.Write File
+20260629 21.36.42 T ExitOK   ID4      TaskNu
+20260629 21.36.42 E Stop     ID0:0.0  TaskService
+20260629 21.36.56 P Instant  ID3      Nu
+20260629 21.36.56 E Start    ID0:0.0  TaskService
+20260629 21.36.56 T Running  ID4      TaskNu
+20260629 21.37.06 P Instant  ID3      Nu
+20260629 21.37.06 P Instant  ID3      Nu
+20260629 21.37.06 T RejCopy  ID4      TaskNu
+20260629 21.37.06 T RejCopy  ID4      TaskNu
+20260629 21.37.21 P Instant  ID3      Nu
+20260629 21.37.21 P Instant  ID3      Nu
+20260629 21.37.21 T RejCopy  ID4      TaskNu
+20260629 21.37.21 T RejCopy  ID4      TaskNu
+20260629 21.37.21 P Instant  ID3      Nu
+20260629 21.37.21 T RejCopy  ID4      TaskNu
+20260629 21.37.26 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.37.26 A OK       ID4.2    TaskNu.Write File
+20260629 21.37.26 T ExitOK   ID4      TaskNu
+20260629 21.37.26 E Stop     ID0:0.0  TaskService
+20260629 21.40.14 P Instant  ID3      Nu
+20260629 21.40.14 E Start    ID0:0.0  TaskService
+20260629 21.40.14 T Running  ID4      TaskNu
+20260629 21.40.14 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.40.14 A OK       ID4.2    TaskNu.Write File
+20260629 21.40.14 T ExitOK   ID4      TaskNu
+20260629 21.40.14 E Stop     ID0:0.0  TaskService
+20260629 21.40.17 P Instant  ID3      Nu
+20260629 21.40.17 E Start    ID0:0.0  TaskService
+20260629 21.40.17 T Running  ID4      TaskNu
+20260629 21.40.17 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.40.17 A OK       ID4.2    TaskNu.Write File
+20260629 21.40.17 T ExitOK   ID4      TaskNu
+20260629 21.40.17 E Stop     ID0:0.0  TaskService
+20260629 21.43.08 P Instant  ID3      Nu
+20260629 21.43.08 E Start    ID0:0.0  TaskService
+20260629 21.43.08 P Instant  ID3      Nu
+20260629 21.43.08 T Running  ID4      TaskNu
+20260629 21.43.08 T RejCopy  ID4      TaskNu
+20260629 21.43.19 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.43.19 A OK       ID4.2    TaskNu.Write File
+20260629 21.43.19 T ExitOK   ID4      TaskNu
+20260629 21.43.19 E Stop     ID0:0.0  TaskService
+20260629 21.43.21 P Instant  ID3      Nu
+20260629 21.43.21 E Start    ID0:0.0  TaskService
+20260629 21.43.21 T Running  ID4      TaskNu
+20260629 21.43.21 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.43.21 A OK       ID4.2    TaskNu.Write File
+20260629 21.43.21 T ExitOK   ID4      TaskNu
+20260629 21.43.21 E Stop     ID0:0.0  TaskService
+20260629 21.44.03 P Instant  ID3      Nu
+20260629 21.44.03 E Start    ID0:0.0  TaskService
+20260629 21.44.03 T Running  ID4      TaskNu
+20260629 21.44.03 P Instant  ID3      Nu
+20260629 21.44.03 T RejCopy  ID4      TaskNu
+20260629 21.44.10 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.44.10 A OK       ID4.2    TaskNu.Write File
+20260629 21.44.10 T ExitOK   ID4      TaskNu
+20260629 21.44.10 E Stop     ID0:0.0  TaskService
+20260629 21.44.11 P Instant  ID3      Nu
+20260629 21.44.11 E Start    ID0:0.0  TaskService
+20260629 21.44.11 T Running  ID4      TaskNu
+20260629 21.44.11 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.44.11 A OK       ID4.2    TaskNu.Write File
+20260629 21.44.11 T ExitOK   ID4      TaskNu
+20260629 21.44.11 E Stop     ID0:0.0  TaskService
+20260629 21.44.45 E Start    ID0:0.0  TaskService
+20260629 21.44.47 E Stop     ID0:0.0  TaskService
+20260629 21.44.50 M Restart  ID0:0.0  Monitor
+20260629 21.44.59 E Start    ID0:0.0  TaskService
+20260629 21.45.02 E Stop     ID0:0.0  TaskService
+20260629 21.47.28 E Start    ID0:0.0  TaskService
+20260629 21.47.31 E Stop     ID0:0.0  TaskService
+20260629 21.48.16 M Restart  ID0:0.0  Monitor
+20260629 21.50.08 P Instant  ID3      Nu
+20260629 21.50.08 E Start    ID0:0.0  TaskService
+20260629 21.50.08 T Running  ID4      TaskNu
+20260629 21.50.12 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.50.12 A OK       ID4.2    TaskNu.Write File
+20260629 21.50.12 T ExitOK   ID4      TaskNu
+20260629 21.50.12 E Stop     ID0:0.0  TaskService
+20260629 21.50.13 P Instant  ID3      Nu
+20260629 21.50.13 E Start    ID0:0.0  TaskService
+20260629 21.50.13 T Running  ID4      TaskNu
+20260629 21.50.14 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.50.14 A OK       ID4.2    TaskNu.Write File
+20260629 21.50.14 T ExitOK   ID4      TaskNu
+20260629 21.50.14 E Stop     ID0:0.0  TaskService
+20260629 21.57.41 E Start    ID0:0.0  TaskService
+20260629 21.57.44 E Stop     ID0:0.0  TaskService
+20260629 21.58.41 E Start    ID0:0.0  TaskService
+20260629 21.58.43 E Stop     ID0:0.0  TaskService
+20260629 21.58.45 E Start    ID0:0.0  TaskService
+20260629 21.58.51 E Stop     ID0:0.0  TaskService
+20260629 21.59.19 P Instant  ID3      Nu
+20260629 21.59.19 E Start    ID0:0.0  TaskService
+20260629 21.59.19 T Running  ID4      TaskNu
+20260629 21.59.19 P Instant  ID3      Nu
+20260629 21.59.19 T RejCopy  ID4      TaskNu
+20260629 21.59.21 P Instant  ID3      Nu
+20260629 21.59.21 T RejCopy  ID4      TaskNu
+20260629 21.59.21 P Instant  ID3      Nu
+20260629 21.59.21 T RejCopy  ID4      TaskNu
+20260629 21.59.22 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.59.22 A OK       ID4.2    TaskNu.Write File
+20260629 21.59.22 T ExitOK   ID4      TaskNu
+20260629 21.59.22 E Stop     ID0:0.0  TaskService
+20260629 21.59.23 P Instant  ID3      Nu
+20260629 21.59.23 E Start    ID0:0.0  TaskService
+20260629 21.59.23 T Running  ID4      TaskNu
+20260629 21.59.23 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 21.59.23 A OK       ID4.2    TaskNu.Write File
+20260629 21.59.23 T ExitOK   ID4      TaskNu
+20260629 21.59.23 E Stop     ID0:0.0  TaskService
+20260629 21.59.36 E Start    ID0:0.0  TaskService
+20260629 21.59.39 E Stop     ID0:0.0  TaskService
+20260629 21.59.41 E Start    ID0:0.0  TaskService
+20260629 21.59.43 E Stop     ID0:0.0  TaskService
+20260629 21.59.45 M Restart  ID0:0.0  Monitor
+20260629 22.00.08 P Instant  ID3      Nu
+20260629 22.00.08 E Start    ID0:0.0  TaskService
+20260629 22.00.08 T Running  ID4      TaskNu
+20260629 22.00.08 P Instant  ID3      Nu
+20260629 22.00.08 T RejCopy  ID4      TaskNu
+20260629 22.00.08 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.00.08 A OK       ID4.2    TaskNu.Write File
+20260629 22.00.08 T ExitOK   ID4      TaskNu
+20260629 22.00.08 E Stop     ID0:0.0  TaskService
+20260629 22.00.09 P Instant  ID3      Nu
+20260629 22.00.09 E Start    ID0:0.0  TaskService
+20260629 22.00.09 T Running  ID4      TaskNu
+20260629 22.00.10 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.00.10 A OK       ID4.2    TaskNu.Write File
+20260629 22.00.10 T ExitOK   ID4      TaskNu
+20260629 22.00.10 E Stop     ID0:0.0  TaskService
+20260629 22.01.50 P Instant  ID3      Nu
+20260629 22.01.50 E Start    ID0:0.0  TaskService
+20260629 22.01.50 P Instant  ID3      Nu
+20260629 22.01.50 T Running  ID4      TaskNu
+20260629 22.01.50 T RejCopy  ID4      TaskNu
+20260629 22.01.57 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.01.57 A OK       ID4.2    TaskNu.Write File
+20260629 22.01.57 T ExitOK   ID4      TaskNu
+20260629 22.01.57 E Stop     ID0:0.0  TaskService
+20260629 22.01.58 P Instant  ID3      Nu
+20260629 22.01.58 E Start    ID0:0.0  TaskService
+20260629 22.01.58 T Running  ID4      TaskNu
+20260629 22.01.59 P Instant  ID3      Nu
+20260629 22.01.59 T RejCopy  ID4      TaskNu
+20260629 22.01.59 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.01.59 P Instant  ID3      Nu
+20260629 22.01.59 A OK       ID4.2    TaskNu.Write File
+20260629 22.01.59 T RejCopy  ID4      TaskNu
+20260629 22.01.59 T ExitOK   ID4      TaskNu
+20260629 22.01.59 E Stop     ID0:0.0  TaskService
+20260629 22.04.26 P Instant  ID3      Nu
+20260629 22.04.26 E Start    ID0:0.0  TaskService
+20260629 22.04.26 T Running  ID4      TaskNu
+20260629 22.04.26 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.04.26 A OK       ID4.2    TaskNu.Write File
+20260629 22.04.26 T ExitOK   ID4      TaskNu
+20260629 22.04.26 E Stop     ID0:0.0  TaskService
+20260629 22.04.28 P Instant  ID3      Nu
+20260629 22.04.28 E Start    ID0:0.0  TaskService
+20260629 22.04.28 T Running  ID4      TaskNu
+20260629 22.04.28 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.04.28 A OK       ID4.2    TaskNu.Write File
+20260629 22.04.28 T ExitOK   ID4      TaskNu
+20260629 22.04.28 E Stop     ID0:0.0  TaskService
+20260629 22.06.27 P Instant  ID3      Nu
+20260629 22.06.27 E Start    ID0:0.0  TaskService
+20260629 22.06.27 T Running  ID4      TaskNu
+20260629 22.06.27 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.06.27 A OK       ID4.2    TaskNu.Write File
+20260629 22.06.27 T ExitOK   ID4      TaskNu
+20260629 22.06.27 E Stop     ID0:0.0  TaskService
+20260629 22.06.29 P Instant  ID3      Nu
+20260629 22.06.29 E Start    ID0:0.0  TaskService
+20260629 22.06.29 T Running  ID4      TaskNu
+20260629 22.06.29 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260629 22.06.29 A OK       ID4.2    TaskNu.Write File
+20260629 22.06.29 T ExitOK   ID4      TaskNu
+20260629 22.06.29 E Stop     ID0:0.0  TaskService
+20260629 22.11.57 E Start    ID0:0.0  TaskService
+20260629 22.11.59 E Stop     ID0:0.0  TaskService
+20260629 22.12.05 E Start    ID0:0.0  TaskService
+20260629 22.12.08 E Stop     ID0:0.0  TaskService
+20260629 22.12.10 E Start    ID0:0.0  TaskService
+20260629 22.12.11 E Stop     ID0:0.0  TaskService
+20260629 22.13.24 M Restart  ID0:0.0  Monitor
+20260630 20.56.54 P Instant  ID3      Nu
+20260630 20.56.54 E Start    ID0:0.0  TaskService
+20260630 20.56.54 T Running  ID4      TaskNu
+20260630 20.56.54 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260630 20.56.54 A OK       ID4.2    TaskNu.Write File
+20260630 20.56.54 T ExitOK   ID4      TaskNu
+20260630 20.56.54 E Stop     ID0:0.0  TaskService
+20260701 11.13.02 P Instant  ID3      Nu
+20260701 11.13.03 E Start    ID0:0.0  TaskService
+20260701 11.13.03 T Running  ID4      TaskNu
+20260701 11.13.03 P Instant  ID3      Nu
+20260701 11.13.03 T RejCopy  ID4      TaskNu
+20260701 11.13.03 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260701 11.13.03 A OK       ID4.2    TaskNu.Write File
+20260701 11.13.03 T ExitOK   ID4      TaskNu
+20260701 11.13.03 E Stop     ID0:0.0  TaskService
+20260701 11.14.07 P Instant  ID3      Nu
+20260701 11.14.07 E Start    ID0:0.0  TaskService
+20260701 11.14.07 T Running  ID4      TaskNu
+20260701 11.14.07 T RejCopy  ID4      TaskNu
+20260701 11.14.07 P Instant  ID3      Nu
+20260701 11.14.07 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260701 11.14.07 A OK       ID4.2    TaskNu.Write File
+20260701 11.14.07 T ExitOK   ID4      TaskNu
+20260701 11.14.07 E Stop     ID0:0.0  TaskService
+20260701 11.16.55 P Instant  ID3      Nu
+20260701 11.16.55 E Start    ID0:0.0  TaskService
+20260701 11.16.55 T Running  ID4      TaskNu
+20260701 11.16.55 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260701 11.16.55 A OK       ID4.2    TaskNu.Write File
+20260701 11.16.55 T ExitOK   ID4      TaskNu
+20260701 11.16.55 E Stop     ID0:0.0  TaskService
+20260701 11.22.17 P Instant  ID3      Nu
+20260701 11.22.17 E Start    ID0:0.0  TaskService
+20260701 11.22.17 T Running  ID4      TaskNu
+20260701 11.22.22 A OK       ID4.1    TaskNu.HTTP Request, TaskNu
+20260701 11.22.22 A OK       ID4.2    TaskNu.Write File
+20260701 11.22.22 T ExitOK   ID4      TaskNu
+20260701 11.22.22 E Stop     ID0:0.0  TaskService
+20260701 11.24.04 P Instant  ID3      Nu
+20260701 11.24.04 E Start    ID0:0.0  TaskService
+20260701 11.24.04 T Running  ID4      TaskNu
+20260701 11.24.04 A Err      ID4.1    TaskNu.HTTP Request, TaskNu
+20260701 11.24.04 A OK       ID4.2    TaskNu.Write File
+20260701 11.24.04 T ExitOK   ID4      TaskNu
+20260701 11.24.04 E Stop     ID0:0.0  TaskService
