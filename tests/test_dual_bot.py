@@ -25,11 +25,11 @@ class TestDualBotRouting(unittest.IsolatedAsyncioTestCase):
         # 1. Setup Mocks
         mock_bot_juanma = AsyncMock()
         mock_bot_juanma.chat_id = 123
-        mock_bot_juanma.ask_user_for_category.return_value = [] # Simulate user skipped
+        mock_bot_juanma.ask_user_for_category.return_value = ([], None) # Simulate user skipped
         
         mock_bot_leydi = AsyncMock()
         mock_bot_leydi.chat_id = 456
-        mock_bot_leydi.ask_user_for_category.return_value = [] 
+        mock_bot_leydi.ask_user_for_category.return_value = ([], None) 
         
         bots = {
             "Juanma": mock_bot_juanma,
@@ -83,10 +83,10 @@ class TestDualBotRouting(unittest.IsolatedAsyncioTestCase):
             with patch('asyncio.sleep', side_effect=StopLoopException("End Loop")):
                  await etl_loop(bots, mock_gmail, mock_parser, mock_loader)
         except StopLoopException:
-            pass
-        except Exception as e:
-            self.fail(f"Unexpected exception: {e}")
-            
+             pass
+        # Give background tasks time to execute
+        await asyncio.sleep(0.5)
+        
         # 4. Assertions
         
         # Verify Leydi Bot was called for Leydi's email

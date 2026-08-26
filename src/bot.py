@@ -334,6 +334,7 @@ class TransactionsBot:
             return
 
         try:
+            self._save_history(target_message_id)
             # Parse amount
             text = update.message.text.replace(',', '').replace('$', '').strip()
             if text.lower().endswith('k'):
@@ -342,31 +343,20 @@ class TransactionsBot:
                 amount_input = float(text)
             
             # Reset status handling
-            state["status"] = "PROCESSING"
+            state["status"] = "WAITING_SPLIT_SCOPE"
             state["current_split_amount"] = amount_input
             
             # Save back
             self.flow_data[target_message_id] = state
             
-            # Reply with category selection
-            # Default scope for manual flow is Personal unless we add a question for it.
-            # We haven't asked for scope in manual flow yet. 
-            # For now, let's assume Personal or ask? 
-            # The current manual flow puts "Unknown" or just skips scope?
-            # Actually, `handle_message` is used for SPLITS too, where scope exists.
-            
-            # If manual flow (session exists), we need to ask scope or default it.
-            # But wait, manual flow just asks AMOUNT then DESC then `process_manual_transaction` -> `ask_user_for_category`.
-            # So `ask_user_for_category` asks for SCOPE.
-            # So manual flow logic here is actually fine as is, because `handle_message` implementation for "WAITING_AMOUNT" 
-            # is only for the SPLIT logic (which already has a scope in state).
-            
-            # Reply with SCOPE selection for this split
-            # Reply with SCOPE selection for this split
             keyboard = [
                 [
                     InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
                     InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                ],
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                    InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
                 ]
             ]
             
@@ -374,13 +364,19 @@ class TransactionsBot:
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=target_message_id,
-                    text=f"Monto asignado: ${amount_input:,.2f}. ¿Es Familiar o Personal?",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    text=self._get_flow_context_header(target_message_id) + f"Gasto por ${amount_input:,.2f}. ¿Es 🏠 Familiar o 👤 Personal?",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
                 )
 
             except Exception as e:
                 logger.error(f"Failed to edit message {target_message_id}: {e}")
-                await self._retry_request(update.message.reply_text, f"Monto asignado: ${amount_input:,.2f}. Selecciona categoría abajo.", reply_markup=InlineKeyboardMarkup(keyboard))
+                await self._retry_request(
+                    update.message.reply_text, 
+                    self._get_flow_context_header(target_message_id) + f"Gasto por ${amount_input:,.2f}. ¿Es 🏠 Familiar o 👤 Personal?", 
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
             
             # Delete user's message
             try:
@@ -479,7 +475,7 @@ class TransactionsBot:
              except:
                   pass
 
-    def _get_category_keyboard(self, scope="Personal"):
+    def _get_category_keyboard(self, scope="Personal", show_back=False):
         """Generates keyboard from config based on scope."""
         categories = CATEGORIES_CONFIG.get(scope, {})
         keyboard = []
@@ -493,10 +489,14 @@ class TransactionsBot:
             keyboard.append(row)
         
         # Add Restart/Cancel options
-        keyboard.append([InlineKeyboardButton("🔄 Reiniciar", callback_data="CAT|RESTART")])
+        last_row = []
+        if show_back:
+            last_row.append(InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"))
+        last_row.append(InlineKeyboardButton("🔄 Reiniciar", callback_data="CAT|RESTART"))
+        keyboard.append(last_row)
         return keyboard
 
-    def _get_subcategory_keyboard(self, category, scope="Personal"):
+    def _get_subcategory_keyboard(self, category, scope="Personal", show_back=False):
         """Generates subcategory keyboard for a given category and scope."""
         categories = CATEGORIES_CONFIG.get(scope, {})
         subcats = categories.get(category, [])
@@ -511,7 +511,11 @@ class TransactionsBot:
             keyboard.append(row)
             
         # Add Restart/Cancel options
-        keyboard.append([InlineKeyboardButton("🔄 Reiniciar", callback_data="SUBCAT|RESTART")])
+        last_row = []
+        if show_back:
+            last_row.append(InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"))
+        last_row.append(InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART"))
+        keyboard.append(last_row)
         return keyboard
 
     async def button(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -527,6 +531,28 @@ class TransactionsBot:
 
         step, value = data.split("|", 1)
         print(f"DEBUG FLOW: Recv Data={data} -> Step={step}, Value={value}")
+
+        # FLOW|BACK handler
+        if step == "FLOW" and value == "BACK":
+            if message_id in self.flow_data:
+                state = self.flow_data[message_id]
+                history = state.get("history", [])
+                if history:
+                    prev_state = history.pop()
+                    for k, v in prev_state.items():
+                        state[k] = v
+                    state["history"] = history
+                    await self._render_state(update, context, message_id, query)
+                else:
+                    try:
+                        await query.answer("No hay más pasos atrás.")
+                    except:
+                        pass
+            return
+
+        # Save history if we are moving forward
+        if step not in ("FLOW", "CONFIRM") and value != "RESTART":
+             self._save_history(message_id)
 
         # Recovery/Check
         if message_id not in self.flow_data and step != "VALID":
@@ -555,83 +581,100 @@ class TransactionsBot:
                  pass
 
             if value == "No":
-                 # Cancel logic
-                 if message_id in self.pending_futures:
-                     future = self.pending_futures[message_id]
-                     if not future.done():
-                         future.set_result([]) 
-                         del self.pending_futures[message_id]
-                 if message_id in self.flow_data:
-                     del self.flow_data[message_id]
-                 await query.edit_message_text(text="❌ Transacción descartada.")
+                  # Cancel logic
+                  state = self.flow_data.get(message_id, {})
+                  merchant = state.get('merchant', 'Desconocido')
+                  amount = state.get("total_amount", 0.0)
+                  date = state.get("date", "?")
+                  user = state.get("user_name", "User")
+                  
+                  text = (
+                      f"❌ *Transacción Descartada* ({escape_md(user)})\n"
+                      f"🛒 {escape_md(merchant)}\n"
+                      f"💵 ${amount:,.2f}\n"
+                      f"📅 {escape_md(date)}"
+                  ) if state else "❌ Transacción descartada."
+
+                  if message_id in self.pending_futures:
+                      future = self.pending_futures[message_id]
+                      if not future.done():
+                          future.set_result([]) 
+                          del self.pending_futures[message_id]
+                  if message_id in self.flow_data:
+                      del self.flow_data[message_id]
+                  await query.edit_message_text(text=text, parse_mode='Markdown')
             
             elif value == "RESTART":
-                 # Restart Logic
-                 if message_id not in self.flow_data:
-                     try:
-                        await query.edit_message_text(text="⚠️ Sesión expirada. No se puede reiniciar.")
-                     except:
-                        pass
-                     return
+                  # Restart Logic
+                  if message_id not in self.flow_data:
+                      try:
+                         await query.edit_message_text(text="⚠️ Sesión expirada. No se puede reiniciar.")
+                      except:
+                         pass
+                      return
 
-                 # Reset Internal State
-                 self.flow_data[message_id]["splits"] = []
-                 self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
-                 self.flow_data[message_id]["status"] = "INIT"
-                 
-                 # Go back to Step 1 (Initial Alert)
-                 keyboard = [
-                    [
-                        InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
-                        InlineKeyboardButton("❌ No Registrar", callback_data="VALID|No"),
-                    ]
-                 ]
-                 
-                 # Reconstruct original text
-                 merchant = self.flow_data[message_id].get('merchant', 'Desconocido')
-                 amount = self.flow_data[message_id].get("total_amount", 0.0)
-                 date = self.flow_data[message_id].get("date", "?")
-                 user = self.flow_data[message_id].get("user_name", "User")
+                  # Reset Internal State
+                  self.flow_data[message_id]["splits"] = []
+                  self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
+                  self.flow_data[message_id]["status"] = "INIT"
+                  
+                  # Go back to Step 1 (Initial Alert)
+                  keyboard = [
+                     [
+                         InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                         InlineKeyboardButton("❌ No Registrar", callback_data="VALID|No"),
+                     ]
+                  ]
+                  
+                  # Reconstruct original text
+                  merchant = self.flow_data[message_id].get('merchant', 'Desconocido')
+                  amount = self.flow_data[message_id].get("total_amount", 0.0)
+                  date = self.flow_data[message_id].get("date", "?")
+                  user = self.flow_data[message_id].get("user_name", "User")
 
-                 # We add a small visual cue that it restarted (timestamp or icon change)
-                 import time
-                 text = (
-                    f"💰 *Nueva Transacción* (Reiniciada 🔄)\n"
-                    f"👤 {escape_md(user)}\n"
-                    f"🛒 {escape_md(merchant)}\n"
-                    f"💵 ${amount:,.2f}\n"
-                    f"📅 {escape_md(date)}\n\n"
-                    f"¿Deseas registrarla?"
-                )
-                 
-                 await query.edit_message_text(
-                     text=text,
-                     reply_markup=InlineKeyboardMarkup(keyboard),
-                     parse_mode='Markdown'
+                  # We add a small visual cue that it restarted (timestamp or icon change)
+                  text = (
+                     f"💰 *Nueva Transacción* (Reiniciada 🔄)\n"
+                     f"👤 {escape_md(user)}\n"
+                     f"🛒 {escape_md(merchant)}\n"
+                     f"💵 ${amount:,.2f}\n"
+                     f"📅 {escape_md(date)}\n\n"
+                     f"¿Deseas registrarla?"
                  )
+                  
+                  await query.edit_message_text(
+                      text=text,
+                      reply_markup=InlineKeyboardMarkup(keyboard),
+                      parse_mode='Markdown'
+                  )
 
             else:
-                 # Step 2: Multiple vs Single (VALID|Yes case)
-                 if message_id not in self.flow_data:
-                     # Should have been created. If not, maybe restart?
-                     self.flow_data[message_id] = {
-                         "total_amount": 0.0, # Unknown if not tracked
-                         "remaining_amount": 0.0,
-                         "splits": [],
-                         "scope": "Personal",
-                         "status": "PROCESSING"
-                     }
+                  # Step 2: Multiple vs Single (VALID|Yes case)
+                  if message_id not in self.flow_data:
+                      # Should have been created. If not, maybe restart?
+                      self.flow_data[message_id] = {
+                          "total_amount": 0.0, # Unknown if not tracked
+                          "remaining_amount": 0.0,
+                          "splits": [],
+                          "scope": "Personal",
+                          "status": "PROCESSING"
+                      }
 
-                 keyboard = [
-                    [
-                        InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
-                        InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
-                    ]
-                 ]
-                 await query.edit_message_text(
-                     text="¿Es una transacción Única o Múltiple?",
-                     reply_markup=InlineKeyboardMarkup(keyboard)
-                 )
+                  self.flow_data[message_id]["status"] = "WAITING_MULTIPLE"
+                  keyboard = [
+                     [
+                         InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
+                         InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
+                     ],
+                     [
+                         InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK")
+                     ]
+                  ]
+                  await query.edit_message_text(
+                      text=self._get_flow_context_header(message_id) + "¿Es una transacción Única o Múltiple?",
+                      reply_markup=InlineKeyboardMarkup(keyboard),
+                      parse_mode='Markdown'
+                  )
 
         elif step == "MULTIPLE":
             is_multiple = (value == "Yes")
@@ -646,21 +689,33 @@ class TransactionsBot:
                 
                 self.flow_data[message_id]["status"] = "WAITING_AMOUNT"
                 
+                keyboard = [
+                    [
+                        InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                        InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                    ]
+                ]
                 await query.edit_message_text(
-                    text=f"Total: ${total:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para el primer gasto.",
+                    text=self._get_flow_context_header(message_id) + f"Total: ${total:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para el primer gasto.",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode='Markdown'
                 )
             else:
                 # Step 3: Scope (Global for Single)
+                self.flow_data[message_id]["status"] = "WAITING_SCOPE"
                 keyboard = [
                     [
                         InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
                         InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                    ],
+                    [
+                        InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK")
                     ]
                 ]
                 await query.edit_message_text(
-                    text=f"¿Es un gasto 🏠 Familiar o 👤 Personal?",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    text=self._get_flow_context_header(message_id) + "¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
                 )
 
 
@@ -672,23 +727,27 @@ class TransactionsBot:
                 # Per-Split Scope
                 self.flow_data[message_id]["current_split_scope"] = value
                 selected_scope = value
+                self.flow_data[message_id]["status"] = "WAITING_CATEGORY"
                 
                 # Now ask for Category
-                keyboard = self._get_category_keyboard(selected_scope)
+                keyboard = self._get_category_keyboard(selected_scope, show_back=True)
                 await query.edit_message_text(
-                    text=f"Scope: {selected_scope}. Selecciona la categoría:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    text=self._get_flow_context_header(message_id) + f"Scope: {selected_scope}. Selecciona la categoría:",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
                 )
             else:
                 # Global Scope (Single)
                 self.flow_data[message_id]["scope"] = value
                 selected_scope = value
+                self.flow_data[message_id]["status"] = "WAITING_CATEGORY"
                 
                 # Now ask for Category
-                keyboard = self._get_category_keyboard(selected_scope)
+                keyboard = self._get_category_keyboard(selected_scope, show_back=True)
                 await query.edit_message_text(
-                    text="Selecciona la categoría:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    text=self._get_flow_context_header(message_id) + "Selecciona la categoría:",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
                 ) 
                 
         elif step == "CAT":
@@ -708,10 +767,12 @@ class TransactionsBot:
             
             if subcats:
                 # Ask for Subcategory
-                keyboard = self._get_subcategory_keyboard(category, scope)
+                self.flow_data[message_id]["status"] = "WAITING_SUBCAT"
+                keyboard = self._get_subcategory_keyboard(category, scope, show_back=True)
                 await query.edit_message_text(
-                    text=f"Categoría: {category}. Selecciona la subcategoría:",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
+                    text=self._get_flow_context_header(message_id) + f"Categoría: {category}. Selecciona la subcategoría:",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
                 )
             else:
                 # No subcategories, finish with main category
@@ -736,10 +797,13 @@ class TransactionsBot:
                     [
                         InlineKeyboardButton("🟢 Ahorrar/Ingresar", callback_data="ACTION|AHORRO"),
                         InlineKeyboardButton("🔴 Gastar/Pagar", callback_data="ACTION|GASTO"),
+                    ],
+                    [
+                        InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK")
                     ]
                 ]
                 await query.edit_message_text(
-                    text=f"📂 *{escape_md(subcategory)}*\n¿Es un Ingreso (Ahorro) o una Salida (Gasto)?",
+                    text=self._get_flow_context_header(message_id) + f"📂 *{escape_md(subcategory)}*\n¿Es un Gasto o un Ingreso?",
                     reply_markup=InlineKeyboardMarkup(keyboard),
                     parse_mode='Markdown'
                 )
@@ -783,13 +847,27 @@ class TransactionsBot:
                     del self.flow_data[message_id]
             
             elif action == "CANCEL":
-                 if message_id in self.pending_futures:
-                     future = self.pending_futures[message_id]
-                     if not future.done():
-                         future.set_result(None) # Cancel
-                 if message_id in self.flow_data:
-                    del self.flow_data[message_id]
-                 await query.edit_message_text(text="❌ Operación cancelada.")
+                  state = self.flow_data.get(message_id, {})
+                  merchant = state.get('merchant', 'Desconocido')
+                  amount = state.get("total_amount", 0.0)
+                  date = state.get("date", "?")
+                  user = state.get("user_name", "User")
+                  
+                  text = (
+                      f"❌ *Operación Cancelada* ({escape_md(user)})\n"
+                      f"🛒 {escape_md(merchant)}\n"
+                      f"💵 ${amount:,.2f}\n"
+                      f"📅 {escape_md(date)}"
+                  ) if state else "❌ Operación cancelada."
+
+                  if message_id in self.pending_futures:
+                      future = self.pending_futures[message_id]
+                      if not future.done():
+                          future.set_result(None) # Cancel
+                          del self.pending_futures[message_id]
+                  if message_id in self.flow_data:
+                     del self.flow_data[message_id]
+                  await query.edit_message_text(text=text, parse_mode='Markdown')
 
         # --- 6. Recurring Flow Callbacks ---
         elif step == "REC":
@@ -988,18 +1066,33 @@ class TransactionsBot:
             if remaining > 1.0: # Tolerance
                     state["status"] = "WAITING_AMOUNT"
                     self.flow_data[message_id] = state
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                            InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                        ]
+                    ]
                     await query.edit_message_text(
-                    text=f"✅ Asignado: ${amount:,.2f} a {escape_md(category_name)}\nRestante: ${remaining:,.2f}\n\n🔢 *RESPONDE* con el siguiente valor."
-                )
+                        text=self._get_flow_context_header(message_id) + f"✅ Asignado: ${amount:,.2f} a {escape_md(category_name)}\nRestante: ${remaining:,.2f}\n\n🔢 *RESPONDE* con el siguiente valor.",
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='Markdown'
+                    )
             elif remaining < -1.0: 
                     # Remove last and retry
                     state["splits"].pop()
                     state["remaining_amount"] = total - sum(s[2] for s in state["splits"])
                     state["status"] = "WAITING_AMOUNT"
                     self.flow_data[message_id] = state
-                    
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                            InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                        ]
+                    ]
                     await query.edit_message_text(
-                    text=f"⚠️ Error: Asignaste ${current_assigned:,.2f}, que supera el total.\nIntenta de nuevo el último monto."
+                        text=self._get_flow_context_header(message_id) + f"⚠️ Error: Asignaste ${current_assigned:,.2f}, que supera el total.\nIntenta de nuevo el último monto.",
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='Markdown'
                     )
             else:
                 # Done
@@ -1092,3 +1185,197 @@ class TransactionsBot:
         except Exception as e:
             print(f"Error: {e}")
             return [], message.message_id
+
+    def _save_history(self, message_id):
+        state = self.flow_data.get(message_id)
+        if not state:
+            return
+        if "history" not in state:
+            state["history"] = []
+        
+        # Take a snapshot of the current state
+        snapshot = {
+            "total_amount": state.get("total_amount", 0.0),
+            "remaining_amount": state.get("remaining_amount", 0.0),
+            "splits": list(state.get("splits", [])),
+            "scope": state.get("scope", "Personal"),
+            "status": state.get("status", "INIT"),
+            "merchant": state.get("merchant", "Desconocido"),
+            "date": state.get("date", "?"),
+            "user_name": state.get("user_name", "User"),
+            "is_multiple": state.get("is_multiple", False),
+            "pending_category": state.get("pending_category", ""),
+            "current_split_amount": state.get("current_split_amount"),
+            "current_split_scope": state.get("current_split_scope"),
+            "current_rel_category": state.get("current_rel_category"),
+            "current_tx_type": state.get("current_tx_type")
+        }
+        
+        # To avoid duplicate history points of the same status/splits, check the last one
+        if not state["history"] or state["history"][-1]["status"] != state["status"] or state["history"][-1]["splits"] != state["splits"]:
+            state["history"].append(snapshot)
+
+    def _get_flow_context_header(self, message_id):
+        state = self.flow_data.get(message_id)
+        if not state:
+            return ""
+        merchant = state.get("merchant", "Desconocido")
+        amount = state.get("total_amount", 0.0)
+        date = state.get("date", "?")
+        user = state.get("user_name", "User")
+        return f"🛒 *{escape_md(merchant)}* | 💵 ${amount:,.2f} | 📅 {escape_md(date)} ({escape_md(user)})\n\n"
+
+    async def _render_state(self, update, context, message_id, query):
+        state = self.flow_data[message_id]
+        status = state.get("status")
+        
+        if status == "INIT":
+            # Show initial question: "¿Deseas registrarla?"
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                    InlineKeyboardButton("❌ No Registrar", callback_data="VALID|No"),
+                ]
+            ]
+            merchant = state.get('merchant', 'Desconocido')
+            amount = state.get("total_amount", 0.0)
+            date = state.get("date", "?")
+            user = state.get("user_name", "User")
+            
+            text = (
+                f"💰 *Nueva Transacción Detectada* ({escape_md(user)})\n"
+                f"🛒 {escape_md(merchant)}\n"
+                f"💵 ${amount:,.2f}\n"
+                f"📅 {escape_md(date)}\n\n"
+                f"¿Deseas registrarla?"
+            )
+            await query.edit_message_text(
+                text=text,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "WAITING_MULTIPLE":
+            keyboard = [
+                [
+                    InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
+                    InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
+                ],
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK")
+                ]
+            ]
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + "¿Es una transacción Única o Múltiple?",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "WAITING_SCOPE":
+            keyboard = [
+                [
+                    InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
+                    InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                ],
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                    InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                ]
+            ]
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + "¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "WAITING_AMOUNT":
+            keyboard = [
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                    InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                ]
+            ]
+            total = state["total_amount"]
+            remaining = state["remaining_amount"]
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + f"Total: ${total:,.2f} | Restante: ${remaining:,.2f}\n\n🔢 *RESPONDE* a este mensaje con el valor para el próximo gasto.",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "WAITING_SPLIT_SCOPE":
+            keyboard = [
+                [
+                    InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
+                    InlineKeyboardButton("👤 Personal", callback_data="SCOPE|Personal"),
+                ],
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                    InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                ]
+            ]
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + f"Gasto por ${state.get('current_split_amount', 0):,.2f}. ¿Es 🏠 Familiar o 👤 Personal?",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+
+        elif status == "WAITING_CATEGORY":
+            scope = state.get("current_split_scope") if state.get("is_multiple") else state.get("scope", "Personal")
+            keyboard = self._get_category_keyboard(scope, show_back=True)
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + f"Scope: {scope}. Selecciona la categoría:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "WAITING_SUBCAT":
+            scope = state.get("current_split_scope") if state.get("is_multiple") else state.get("scope", "Personal")
+            category = state.get("pending_category", "")
+            keyboard = self._get_subcategory_keyboard(category, scope, show_back=True)
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + f"Categoría: {category}. Selecciona la subcategoría:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "WAITING_ACTION":
+            subcategory = state.get("current_rel_category", "")
+            keyboard = [
+                [
+                    InlineKeyboardButton("🟢 Ahorrar/Ingresar", callback_data="ACTION|AHORRO"),
+                    InlineKeyboardButton("🔴 Gastar/Pagar", callback_data="ACTION|GASTO"),
+                ],
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                    InlineKeyboardButton("🔄 Reiniciar", callback_data="VALID|RESTART")
+                ]
+            ]
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + f"📂 *{escape_md(subcategory)}*\n¿Es un Gasto o un Ingreso?",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            
+        elif status == "CONFIRMATION":
+            splits = state["splits"]
+            msg = "📝 *Resumen de la Transacción*\n\n"
+            for cat, scope, amt, user, tx_type in splits:
+                msg += f"• {escape_md(cat)} ({escape_md(scope)}) [{escape_md(tx_type)}]: ${amt:,.2f}\n"
+            
+            msg += "\n¿Es correcto?"
+            
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Guardar", callback_data="CONFIRM|SAVE"),
+                ],
+                [
+                    InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
+                    InlineKeyboardButton("🔄 Reiniciar", callback_data="CONFIRM|RESTART"),
+                ]
+            ]
+            await query.edit_message_text(
+                text=self._get_flow_context_header(message_id) + msg,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )

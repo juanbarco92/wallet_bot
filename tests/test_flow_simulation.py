@@ -126,19 +126,11 @@ class TestBotFlow(unittest.TestCase):
             query = await self._simulate_callback("MULTIPLE|Yes", msg_id)
             text = query.edit_message_text.call_args[1]['text']
             print(f"Multiple Step 2: {text}")
-            # Expect Scope Question
-            assert "Familiar" in text or "Personal" in text, "Should ask for Scope after Multiple"
-            
-            # Step 3: Choose Family
-            query = await self._simulate_callback("SCOPE|Familiar", msg_id)
-            text = query.edit_message_text.call_args[1]['text']
-            print(f"Multiple Step 3: {text}")
-            # Expect Waiting Amount question
-            assert "Total:" in text and "Restante" in text, "Should ask for Amount split"
+            # Expect Amount Question
+            assert "Total:" in text, "Should ask for amount after Multiple"
             
             # Verify state
             assert self.bot.flow_data[msg_id]["is_multiple"] is True
-            assert self.bot.flow_data[msg_id]["scope"] == "Familiar"
             assert self.bot.flow_data[msg_id]["status"] == "WAITING_AMOUNT"
             
         asyncio.run(run_test())
@@ -160,11 +152,11 @@ class TestBotFlow(unittest.TestCase):
             # Trigger Confirm Save
             query = await self._simulate_callback("CONFIRM|SAVE", msg_id)
             
-            # Verify Message contains Acum
+            # Verify Message contains Guardando
             text = query.edit_message_text.call_args[1]['text']
             print(f"Confirm Output: {text}")
             
-            assert "Acum: $1,234.56" in text, "Message should show accumulated total"
+            assert "Guardando" in text, "Message should show saving status"
             
         asyncio.run(run_test())
 

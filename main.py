@@ -7,7 +7,7 @@ from aiohttp import web
 from datetime import datetime
 from src.ingestion import GmailClient, TokenExpiredError, detect_original_source
 from src.parser import TransactionParser, Classifier
-from src.bot import TransactionsBot
+from src.bot import TransactionsBot, escape_md
 from src.loader import SheetsLoader
 from dotenv import load_dotenv
 
@@ -75,6 +75,18 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
             gmail.mark_as_read(email_id)
             return
 
+        # 2.5 Deduplication Check
+        try:
+            tx_date = transaction.get('date')
+            tx_amount = transaction.get('amount', 0.0)
+            tx_merchant = transaction.get('merchant', '')
+            if loader.transaction_exists(tx_date, tx_amount, tx_merchant) is True:
+                logger.info(f"Transaction already exists in Sheets (deduplicated): {transaction}")
+                gmail.mark_as_read(email_id)
+                return
+        except Exception as e:
+            logger.error(f"Error during deduplication check: {e}")
+
         # 3. Classify / Human-in-the-Loop
         # We pass routing info to bot
         logger.info(f"Asking {target_user} about transaction: {transaction}")
@@ -105,6 +117,15 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
             
             # Update Telegram Message to Success
             if message_id and current_bot and current_bot.application:
+                resolved_chat_id = target_chat_id
+                if not resolved_chat_id:
+                     if current_bot.chat_id:
+                          resolved_chat_id = current_bot.chat_id
+                     else:
+                          chat_id_env_key = "TELEGRAM_CHAT_ID_JUANMA" if target_user == "Juanma" else "TELEGRAM_CHAT_ID_LEY"
+                          env_chat_id = os.getenv(chat_id_env_key) or os.getenv("TELEGRAM_CHAT_ID_JUANMA")
+                          if env_chat_id:
+                               resolved_chat_id = int(env_chat_id)
                 try:
                     msg_text = "💾 *Guardado Exitoso* en Google Sheets."
                     
@@ -114,27 +135,39 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                              # Optimistic accumulation REMOVED: Sheets is fast enough.
                              accumulated = loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
                              # accumulated += split_amount
-                             msg_text += f"\n• *{category}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
+                             msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
                          except Exception as exc:
                              logger.error(f"Error calculating accumulation for UI: {exc}")
-                             msg_text += f"\n• *{category}*: ${split_amount:,.2f}"
+                             msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}"
 
-                    await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
-                    # Effectively send the 'guardado' message so a notification is triggered
-                    await current_bot.application.bot.send_message(chat_id=target_chat_id, text="guardado")
+                    await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
                 except Exception as e:
-                    logger.error(f"Failed to edit completion message or send guardado: {e}")
+                    logger.error(f"Failed to edit completion message: {e}")
+                    # Fallback to plain text message send in case edit fails
+                    try:
+                        await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=msg_text)
+                    except Exception as fallback_e:
+                        logger.error(f"Fallback send_message failed: {fallback_e}")
 
         else:
             logger.warning(f"Skipping mark_as_read for email {email_id} due to save failure.")
             # Notify user via Edit if possible
             if current_bot and current_bot.application:
+                 resolved_chat_id = target_chat_id
+                 if not resolved_chat_id:
+                      if current_bot.chat_id:
+                           resolved_chat_id = current_bot.chat_id
+                      else:
+                           chat_id_env_key = "TELEGRAM_CHAT_ID_JUANMA" if target_user == "Juanma" else "TELEGRAM_CHAT_ID_LEY"
+                           env_chat_id = os.getenv(chat_id_env_key) or os.getenv("TELEGRAM_CHAT_ID_JUANMA")
+                           if env_chat_id:
+                                resolved_chat_id = int(env_chat_id)
                  err_text = f"⚠️ Error guardando transacción de {email_data.get('snippet', 'unknown')}. No se marcará como leído."
                  try:
                      if message_id:
-                         await current_bot.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=err_text)
+                         await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=err_text)
                      else:
-                         await current_bot.application.bot.send_message(chat_id=current_bot.chat_id, text=err_text)
+                         await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=err_text)
                  except Exception as e:
                      logger.error(f"Failed to edit error message: {e}")
 

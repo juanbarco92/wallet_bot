@@ -240,6 +240,66 @@ class SheetsLoader:
             print(f"Error calculating accumulation: {e}")
             return 0.0
 
+    def transaction_exists(self, tx_date: str, amount: float, merchant: str) -> bool:
+        """
+        Checks if a transaction with the same date (just day/month/year part), amount, and merchant already exists in the sheet.
+        """
+        if not self.sheet:
+            try:
+                if self.client:
+                    sh = self.client.open_by_key(self.sheet_id)
+                    self.sheet = sh.worksheet("Base_Transacciones")
+                else:
+                    return False
+            except:
+                return False
+        
+        try:
+            rows = self.sheet.get_all_records()
+            
+            # Extract day/month/year from the query date for comparison
+            # tx_date format is usually "DD/MM/YYYY HH:MM" or similar
+            query_date_part = tx_date.split(" ")[0].strip() if tx_date else ""
+            if not query_date_part:
+                return False
+                
+            query_merchant = str(merchant).strip().lower()
+            query_amount = float(amount)
+            
+            for raw_row in rows:
+                row = {k.strip().lower(): v for k, v in raw_row.items()}
+                
+                # Check Amount
+                amount_val = row.get("monto", 0)
+                try:
+                    if isinstance(amount_val, (int, float)):
+                        row_amount = float(amount_val)
+                    else:
+                        amount_str = str(amount_val).replace(',', '').replace('$', '').strip()
+                        row_amount = float(amount_str) if amount_str else 0.0
+                except:
+                    row_amount = 0.0
+                    
+                if abs(row_amount - query_amount) > 0.01:
+                    continue
+                    
+                # Check Date (just compare the DD/MM/YYYY part)
+                row_date_str = str(row.get("fecha") or row.get("date") or "").strip()
+                row_date_part = row_date_str.split(" ")[0].strip() if row_date_str else ""
+                
+                if row_date_part != query_date_part:
+                    continue
+                    
+                # Check Merchant (substring match)
+                row_merchant = str(row.get("descripción") or row.get("descripcion") or "").strip().lower()
+                if query_merchant in row_merchant or row_merchant in query_merchant:
+                    return True
+                    
+            return False
+        except Exception as e:
+            print(f"Error checking if transaction exists: {e}")
+            return False
+
     def get_recurring_expenses(self) -> Dict[int, List[Dict]]:
         """
         Fetches recurring expenses configuration from 'Config_Fijos' sheet.
