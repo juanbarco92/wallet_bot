@@ -31,7 +31,14 @@ A "Human-in-the-Loop" ETL pipeline that reads bank notification emails, parses t
     poetry run python main.py
     ```
 
+## Documentation
+
+- **[AGENTS.md](AGENTS.md)**: Agent runbook, operating rules, GCP deployment checklist, and verification guide.
+- **[context.md](context.md)**: Architecture notes, quirks, and technical history.
+- **[backlog.md](backlog.md)**: Product backlog, 1-Click categorization proposal, and roadmap.
+
 ## Project Structure
 
--   `src/`: Source code modules.
--   `main.py`: Entry point.
+- `src/`: Source code modules.
+- `main.py`: Entry point.
+
