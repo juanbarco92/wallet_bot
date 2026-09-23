@@ -2774,7 +2774,7 @@ class TransactionsBot:
     async def show_recent(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Displays recent transactions and their synchronization status."""
         if not self.storage:
-            await update.message.reply_text("ℹ️ Almacenamiento no configurado.")
+            await self._retry_request(update.message.reply_text, "ℹ️ Almacenamiento no configurado.")
             return
             
         user_name = self._get_user_label(update.effective_user.id if update.effective_user else None)
@@ -2782,7 +2782,7 @@ class TransactionsBot:
         recent = self.storage.get_recent_transactions(limit=5, usuario=user_filter)
             
         if not recent:
-            await update.message.reply_text("ℹ️ No tienes transacciones registradas recientemente.")
+            await self._retry_request(update.message.reply_text, "ℹ️ No tienes transacciones registradas recientemente.")
             return
             
         status_icons = {
@@ -2795,14 +2795,20 @@ class TransactionsBot:
             "ERROR_SHEETS": "⚠️"
         }
         
-        msg = "🕒 *Últimas Transacciones:*\n\n"
+        msg = f"🕒 *Últimas Transacciones* ({escape_md(user_name)}):\n\n"
         for tx in recent:
             icon = status_icons.get(tx.get("estado"), "•")
             comercio = tx.get("comercio", "Desconocido")
+            clean_m = re.sub(r'\s+', ' ', str(comercio).replace('*', ' ')).strip()
             monto = tx.get("monto_total", 0.0)
             fecha = tx.get("fecha_transaccion", "?")
             estado = tx.get("estado", "")
-            msg += f"{icon} 🛒 *{escape_md(comercio)}* - ${monto:,.2f}\n"
+            msg += f"{icon} 🛒 *{escape_md(clean_m)}* - ${monto:,.2f}\n"
             msg += f"   📅 {escape_md(fecha)} | `{estado}`\n"
             
-        await update.message.reply_text(msg, parse_mode='Markdown')
+        try:
+            await self._retry_request(update.message.reply_text, msg, parse_mode='Markdown')
+        except Exception:
+            clean_text = msg.replace('*', '').replace('`', '')
+            await self._retry_request(update.message.reply_text, clean_text)
+
