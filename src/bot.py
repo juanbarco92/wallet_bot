@@ -1642,12 +1642,9 @@ class TransactionsBot:
         user_name = self._get_user_label(update.effective_user.id if update.effective_user else None)
         user_filter = user_name if user_name != "User" else None
         pending = self.storage.get_pending_transactions(usuario=user_filter)
-        if not pending and user_filter:
-            # Also fallback without user filter
-            pending = self.storage.get_pending_transactions()
             
         if not pending:
-            await update.message.reply_text("🎉 ¡No hay transacciones pendientes por categorizar!")
+            await update.message.reply_text("🎉 ¡No tienes transacciones pendientes por categorizar!")
             return
             
         msg = f"📋 *Transacciones Pendientes* ({len(pending)}):\n\n"
@@ -1673,11 +1670,9 @@ class TransactionsBot:
         user_name = self._get_user_label(update.effective_user.id if update.effective_user else None)
         user_filter = user_name if user_name != "User" else None
         recent = self.storage.get_recent_transactions(limit=5, usuario=user_filter)
-        if not recent and user_filter:
-            recent = self.storage.get_recent_transactions(limit=5)
             
         if not recent:
-            await update.message.reply_text("ℹ️ No hay transacciones registradas recientemente.")
+            await update.message.reply_text("ℹ️ No tienes transacciones registradas recientemente.")
             return
             
         status_icons = {
