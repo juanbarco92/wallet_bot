@@ -4,3 +4,5 @@ credentials.json
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+*.db
+autotrx.db

@@ -22,3 +22,12 @@
 4. **Google Cloud Logging Integration (`main.py`):**
    - Integrates with `google-cloud-logging` to stream logs directly to GCP Cloud Logging. This consumes 0 bytes of the VM's local 30GB persistent disk.
    - In case of warning scenarios (e.g. `merchant == 'UNKNOWN'` or `amount == 0.0`), the system logs a `logger.warning` containing the Gmail message ID, sender, subject, and the entire MIME-decoded body, making troubleshooting via Log Explorer simple.
+5. **Local SQLite Persistence Buffer (`src/storage.py`):**
+   - AutoTrx uses a lightweight local SQLite database (`autotrx.db`) running in WAL mode to persist and buffer all incoming transactions (emails and webhooks) upon arrival.
+   - Fixes the bug where transactions turned into $0.00 / Desconocido if left unanswered or if the bot restarted. State is restored directly from SQLite on user interaction.
+   - Provides commands `/pendientes` (or `/p`) and `/ultimas` (or `/u`) to audit unclassified and recently synced/discarded transactions.
+6. **Merchant Parsing & Telegram Markdown Asterisk Robustness (`src/parser.py`, `src/bot.py`, `main.py`):**
+   - **Domains & Subscriptions:** Parser regex supports online subscriptions ending in `, el` (e.g. `en DLO*Netflix.com, el...`) and names with dots (`.com`, `S.A.S.`).
+   - **Wrapping Asterisks:** Cleans prefix/suffix asterisks from extracted merchant names (`.strip("* \t\r\n")`).
+   - **No More "Guardando..." Freezing:** When saving orphan/recovered transactions or manual transactions, the UI reliably transitions from `⏳ Guardando...` to `💾 Guardado Exitoso`. All `edit_message_text` calls feature plain-text fallback if Markdown V1 entities fail, and send the `"guardado"` push notification for Tasker.
+

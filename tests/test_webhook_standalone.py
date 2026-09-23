@@ -4,9 +4,10 @@ import sys
 import aiohttp
 from unittest.mock import AsyncMock, MagicMock
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import pytest
 from main import start_web_server
 
+@pytest.mark.asyncio
 async def test_webhook():
     print("--- TESTING TASKER WEBHOOK ---")
     

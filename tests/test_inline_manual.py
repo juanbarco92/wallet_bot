@@ -6,8 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 # Add src to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import pytest
 from src.bot import TransactionsBot
 
+@pytest.mark.asyncio
 async def test_inline_manual():
     print("--- TESTING INLINE MANUAL FLOW ---")
     

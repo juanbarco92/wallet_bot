@@ -5,41 +5,49 @@ DEBUG: Passing Key: AIza...JlmI
 Running list_models()...
 Available Model: models/gemini-2.5-flash
 Available Model: models/gemini-2.5-pro
-Available Model: models/gemini-2.0-flash-exp
-Available Model: models/gemini-2.0-flash
-Available Model: models/gemini-2.0-flash-001
-Available Model: models/gemini-2.0-flash-exp-image-generation
-Available Model: models/gemini-2.0-flash-lite-001
-Available Model: models/gemini-2.0-flash-lite
-Available Model: models/gemini-2.0-flash-lite-preview-02-05
-Available Model: models/gemini-2.0-flash-lite-preview
-Available Model: models/gemini-exp-1206
 Available Model: models/gemini-2.5-flash-preview-tts
 Available Model: models/gemini-2.5-pro-preview-tts
-Available Model: models/gemma-3-1b-it
-Available Model: models/gemma-3-4b-it
-Available Model: models/gemma-3-12b-it
-Available Model: models/gemma-3-27b-it
-Available Model: models/gemma-3n-e4b-it
-Available Model: models/gemma-3n-e2b-it
+Available Model: models/gemma-4-26b-a4b-it
+Available Model: models/gemma-4-31b-it
 Available Model: models/gemini-flash-latest
 Available Model: models/gemini-flash-lite-latest
 Available Model: models/gemini-pro-latest
 Available Model: models/gemini-2.5-flash-lite
-Available Model: models/gemini-2.5-flash-image-preview
 Available Model: models/gemini-2.5-flash-image
-Available Model: models/gemini-2.5-flash-preview-09-2025
-Available Model: models/gemini-2.5-flash-lite-preview-09-2025
-Available Model: models/gemini-3-pro-preview
 Available Model: models/gemini-3-flash-preview
+Available Model: models/gemini-3.1-pro-preview
+Available Model: models/gemini-3.1-pro-preview-customtools
+Available Model: models/gemini-3.1-flash-lite-preview
+Available Model: models/gemini-3.1-flash-lite
 Available Model: models/gemini-3-pro-image-preview
+Available Model: models/gemini-3-pro-image
 Available Model: models/nano-banana-pro-preview
-Available Model: models/gemini-robotics-er-1.5-preview
+Available Model: models/gemini-3.1-flash-image-preview
+Available Model: models/gemini-3.1-flash-image
+Available Model: models/gemini-3.1-flash-lite-image
+Available Model: models/gemini-3.5-flash
+Available Model: models/gemini-3.5-flash-lite
+Available Model: models/gemini-omni-flash-preview
+Available Model: models/gemini-omni-1.1-flash
+Available Model: models/gemini-3.5-transcribe
+Available Model: models/gemini-3.6-flash
+Available Model: models/gemini-3.7-flash
+Available Model: models/gemini-3.8-flash
+Available Model: models/lyria-3-clip-preview
+Available Model: models/lyria-3-pro-preview
+Available Model: models/lyria-3.5
+Available Model: models/gemini-3.1-flash-tts-preview
+Available Model: models/gemini-robotics-er-2-preview
 Available Model: models/gemini-2.5-computer-use-preview-10-2025
+Available Model: models/antigravity-preview-05-2026
+Available Model: models/antigravity-preview-09-2026
+Available Model: models/antigravity-preview-latest
+Available Model: models/deep-research-max-preview-04-2026
+Available Model: models/deep-research-preview-04-2026
 Available Model: models/deep-research-pro-preview-12-2025
 
 Scanning text...
 
-Result: {'date': '04/11/2025 12:30', 'amount': 5000.0, 'merchant': 'TRANSFER', 'description': 'TRANSFER', 'original_text': 'Logo Bancolombia [https://bancolombia-email-wsuite.s3.amazonaws.com/templates/605ce7f68622a5425353ea51/img/header-logo.png]yellow-icon [https://bancolombia-email-wsuite.s3.amazonaws.com/templates/64e68b61fa57f445dc99747d/img/chulo.png]\r\n¡Listo!Todo salió bien con tus movimientosBancolombia: Transferiste $5,000.00\r\npor QR desde tu cuenta 1391 a la cuenta 3806, el 2025/11/04 12:30. ¿Dudas?\r\nLlamanos al 018000931987. Estamos cerca.'}
+Result: {'date': '22/09/2026 23:10', 'amount': 5000.0, 'merchant': 'LA CUENTA 3806', 'description': 'LA CUENTA 3806', 'original_text': 'Logo Bancolombia [https://bancolombia-email-wsuite.s3.amazonaws.com/templates/605ce7f68622a5425353ea51/img/header-logo.png]yellow-icon [https://bancolombia-email-wsuite.s3.amazonaws.com/templates/64e68b61fa57f445dc99747d/img/chulo.png]\r\n¡Listo!Todo salió bien con tus movimientosBancolombia: Transferiste $5,000.00\r\npor QR desde tu cuenta 1391 a la cuenta 3806, el 2025/11/04 12:30. ¿Dudas?\r\nLlamanos al 018000931987. Estamos cerca.'}
 ✅ Amount OK
-❌ Merchant FAIL: TRANSFER
+✅ Merchant OK: LA CUENTA 3806

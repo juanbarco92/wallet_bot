@@ -16,7 +16,8 @@ class TestBotFlow(unittest.TestCase):
             with patch("src.bot.ApplicationBuilder") as mock_builder:
                 mock_app = MagicMock()
                 mock_builder.return_value.token.return_value.request.return_value.build.return_value = mock_app
-                self.bot = TransactionsBot()
+                from src.storage import TransactionStorage
+                self.bot = TransactionsBot(storage=TransactionStorage(":memory:"))
                 self.bot.application = mock_app
 
     async def _simulate_callback(self, data, message_id=111):
@@ -152,11 +153,10 @@ class TestBotFlow(unittest.TestCase):
             # Trigger Confirm Save
             query = await self._simulate_callback("CONFIRM|SAVE", msg_id)
             
-            # Verify Message contains Guardando
-            text = query.edit_message_text.call_args[1]['text']
-            print(f"Confirm Output: {text}")
-            
-            assert "Guardando" in text, "Message should show saving status"
+            # Verify Message contains Guardando or Guardado Exitoso
+            edit_texts = [str(c[1].get('text', '')) for c in query.edit_message_text.call_args_list]
+            print(f"Confirm Output Calls: {edit_texts}")
+            assert any("Guardado" in t or "Guardando" in t for t in edit_texts), "Message should show saving/success status"
             
         asyncio.run(run_test())
 

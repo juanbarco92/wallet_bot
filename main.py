@@ -9,6 +9,7 @@ from src.ingestion import GmailClient, TokenExpiredError, detect_original_source
 from src.parser import TransactionParser, Classifier
 from src.bot import TransactionsBot, escape_md
 from src.loader import SheetsLoader
+from src.storage import TransactionStorage
 from dotenv import load_dotenv
 
 # Configure logging
@@ -67,25 +68,39 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                 f"Raw Text: {text_to_parse!r}"
             )
             
-        if not transaction['amount'] and not transaction['merchant']:
-            logger.warning(f"Could not parse transaction from email {email_id}")
-            # Mark as read to avoid loop? Or skip?
-            # If we can't parse, maybe it's spam or irrelevant.
-            # For now, let's mark read so we don't get stuck.
+        tx_amount = float(transaction.get('amount') or 0.0)
+        tx_merchant = str(transaction.get('merchant') or '').strip()
+        if tx_amount <= 0.0 and (not tx_merchant or tx_merchant.upper() in ('UNKNOWN', 'DESCONOCIDO')):
+            logger.warning(f"Could not parse valid transaction from email {email_id} (amount={tx_amount}, merchant={tx_merchant}). Marking as read.")
             gmail.mark_as_read(email_id)
             return
 
         # 2.5 Deduplication Check
         try:
             tx_date = transaction.get('date')
-            tx_amount = transaction.get('amount', 0.0)
-            tx_merchant = transaction.get('merchant', '')
             if loader.transaction_exists(tx_date, tx_amount, tx_merchant) is True:
                 logger.info(f"Transaction already exists in Sheets (deduplicated): {transaction}")
                 gmail.mark_as_read(email_id)
                 return
         except Exception as e:
             logger.error(f"Error during deduplication check: {e}")
+
+        # Buffer in SQLite before asking user
+        storage_id = None
+        if hasattr(current_bot, 'storage') and current_bot.storage:
+            try:
+                storage_id = current_bot.storage.insert_incoming_transaction(
+                    origen="email",
+                    comercio=tx_merchant or "Desconocido",
+                    monto=tx_amount,
+                    fecha=str(transaction.get('date') or datetime.now().strftime("%Y-%m-%d")),
+                    usuario=target_user,
+                    raw_text=text_to_parse,
+                    external_id=email_id
+                )
+                transaction["storage_id"] = storage_id
+            except Exception as e:
+                logger.error(f"Error buffering email transaction in SQLite: {e}")
 
         # 3. Classify / Human-in-the-Loop
         # We pass routing info to bot
@@ -94,6 +109,8 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
         
         if not splits:
             logger.info("Transaction ignored or skipped by user.")
+            if message_id and hasattr(current_bot, 'storage') and current_bot.storage:
+                current_bot.storage.mark_as_discarded(message_id)
             gmail.mark_as_read(email_id)
             return
 
@@ -112,6 +129,9 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
         
         # 5. Mark as read only if ALL saved successfully
         if all_saved:
+            if message_id and hasattr(current_bot, 'storage') and current_bot.storage:
+                current_bot.storage.mark_as_synced(message_id)
+
             # Mark email as read
             gmail.mark_as_read(email_id)
             
@@ -132,24 +152,37 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                     # Append details and accumulation
                     for category, scope, split_amount, user_who_paid, tx_type in splits:
                          try:
-                             # Optimistic accumulation REMOVED: Sheets is fast enough.
                              accumulated = loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
-                             # accumulated += split_amount
                              msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
                          except Exception as exc:
                              logger.error(f"Error calculating accumulation for UI: {exc}")
                              msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}"
 
-                    await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
-                except Exception as e:
-                    logger.error(f"Failed to edit completion message: {e}")
-                    # Fallback to plain text message send in case edit fails
                     try:
-                        await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=msg_text)
-                    except Exception as fallback_e:
-                        logger.error(f"Fallback send_message failed: {fallback_e}")
+                        await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                    except Exception as e:
+                        logger.warning(f"Failed to edit completion message with Markdown ({e}), retrying plain text...")
+                        clean_text = msg_text.replace('*', '')
+                        try:
+                            await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=clean_text)
+                        except Exception as edit_err:
+                            logger.error(f"Fallback plain text edit failed: {edit_err}")
+                            try:
+                                await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=clean_text)
+                            except Exception as fallback_e:
+                                logger.error(f"Fallback send_message failed: {fallback_e}")
+
+                    # Effectively send the 'guardado' message so a notification is triggered
+                    try:
+                        await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text="guardado")
+                    except Exception as notif_err:
+                        logger.error(f"Failed to send guardado notification: {notif_err}")
+                except Exception as ui_err:
+                    logger.error(f"Error updating UI after save: {ui_err}")
 
         else:
+            if message_id and hasattr(current_bot, 'storage') and current_bot.storage:
+                current_bot.storage.mark_as_error(message_id, "Falló guardado de splits en Google Sheets")
             logger.warning(f"Skipping mark_as_read for email {email_id} due to save failure.")
             # Notify user via Edit if possible
             if current_bot and current_bot.application:
@@ -233,10 +266,13 @@ async def tasker_webhook_handler(request):
             logger.warning(f"Tasker payload invalid (missing amount or merchant): {data} | Resolved amount: {amount}, merchant: {merchant}")
             return web.json_response({"error": "Invalid payload, 'amount' and 'merchant' required, or valid 'texto'"}, status=400)
             
+        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
         transaction_data = {
             "amount": float(amount),
             "merchant": str(merchant),
-            "date": datetime.now().strftime("%d/%m/%Y %H:%M")
+            "date": now_str,
+            "source": "tasker",
+            "raw_text": str(texto or "")
         }
         
         bot_juanma = request.app["bot_juanma"]
@@ -244,6 +280,20 @@ async def tasker_webhook_handler(request):
             logger.error("Bot subsystem not ready inside /tasker webhook handler.")
             return web.json_response({"error": "Bot subsystem not ready"}, status=503)
             
+        if hasattr(bot_juanma, 'storage') and bot_juanma.storage:
+            try:
+                tx_id = bot_juanma.storage.insert_incoming_transaction(
+                    origen="tasker",
+                    comercio=str(merchant),
+                    monto=float(amount),
+                    fecha=now_str,
+                    usuario="Juanma",
+                    raw_text=str(texto or "")
+                )
+                transaction_data["db_id"] = tx_id
+            except Exception as e:
+                logger.error(f"Error buffering Tasker transaction in SQLite: {e}")
+
         asyncio.create_task(bot_juanma.process_manual_transaction(transaction_data))
         logger.info(f"Successfully processed Tasker transaction: {transaction_data}")
         
@@ -351,6 +401,7 @@ async def main():
         parser = TransactionParser()
         classifier = Classifier() 
         loader = SheetsLoader(credentials=gmail.creds)
+        storage = TransactionStorage()
     except TokenExpiredError as e:
         logger.critical(f"Fatal Auth Error during startup: {e}")
         return # Cannot proceed
@@ -373,8 +424,8 @@ async def main():
     token_juanma = os.getenv("TELEGRAM_TOKEN_JUANMA")
     token_leydi = os.getenv("TELEGRAM_TOKEN_LEY")
     
-    # Pass notifier to bot
-    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user)
+    # Pass notifier and storage to bot
+    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user, storage=storage)
     bot_leydi = None
     
     # Start Polling
@@ -385,7 +436,7 @@ async def main():
     bots = {"Juanma": bot_juanma}
 
     if token_leydi:
-        bot_leydi = TransactionsBot(token=token_leydi, loader=loader) # Leydi relies on Juanma's stability or separate handler?
+        bot_leydi = TransactionsBot(token=token_leydi, loader=loader, storage=storage) # Leydi relies on Juanma's stability or separate handler?
         await bot_leydi.start_polling()
         bots["Leydi"] = bot_leydi
         logger.info("Bot Leydi started.")

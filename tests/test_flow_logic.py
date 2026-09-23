@@ -6,8 +6,10 @@ from unittest.mock import MagicMock, AsyncMock, patch
 # Add project root to path
 sys.path.append(os.getcwd())
 
+import pytest
 from src.bot import TransactionsBot
 
+@pytest.mark.asyncio
 async def test_transaction_flow():
     print("🚀 Starting Logic Flow Simulation...")
     
@@ -36,7 +38,8 @@ async def test_transaction_flow():
         mock_bot.answer_callback_query = AsyncMock()
         
         print("   Initializing Bot (with Mocks)...")
-        bot = TransactionsBot(loader=mock_loader, token="123:FAKE_TOKEN")
+        from src.storage import TransactionStorage
+        bot = TransactionsBot(loader=mock_loader, token="123:FAKE_TOKEN", storage=TransactionStorage(":memory:"))
         
         # Ensure pending_futures is init
         if not hasattr(bot, 'pending_futures'):

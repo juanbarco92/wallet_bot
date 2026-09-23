@@ -6,14 +6,17 @@ from unittest.mock import MagicMock, AsyncMock
 # Add project root to path
 sys.path.append(os.getcwd())
 
+import pytest
 from src.bot import TransactionsBot
 
+@pytest.mark.asyncio
 async def test_restart_flow():
     print("🚀 Starting Logic Flow Simulation for RESTART...")
     
     # 1. Mock Bot
     mock_app = MagicMock()
-    bot = TransactionsBot("TOKEN", "SHEET_ID")
+    from src.storage import TransactionStorage
+    bot = TransactionsBot("TOKEN", "SHEET_ID", storage=TransactionStorage(":memory:"))
     bot.application = mock_app
     bot.chat_id = 123456
     

@@ -1,11 +1,13 @@
 import asyncio
 import os
-from typing import Dict, Optional, List, Tuple
+from datetime import datetime
+from typing import Dict, Optional, List, Tuple, Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 from telegram.error import NetworkError, TimedOut
 import logging
 from src.config import CATEGORIES_CONFIG, RECURRING_EXPENSES
+from src.storage import TransactionStorage
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,10 +31,11 @@ def escape_md(text):
 from telegram.request import HTTPXRequest
 
 class TransactionsBot:
-    def __init__(self, loader=None, token=None, notifier=None):
+    def __init__(self, loader=None, token=None, notifier=None, storage=None):
         self.token = token or TOKEN
         self.notifier = notifier # Callback for notifications (e.g., email)
         self.loader = loader
+        self.storage = storage if storage is not None else TransactionStorage()
         
         self.pending_futures: Dict[str, asyncio.Future] = {}
         self.flow_data: Dict[str, Dict] = {} 
@@ -65,6 +68,10 @@ class TransactionsBot:
         self.application.add_handler(manual_handler)
         self.application.add_handler(CommandHandler('m', self.start_manual_flow)) # Shortcut
         self.application.add_handler(CommandHandler('fijos', self.start_recurring_flow)) # Recurring
+        self.application.add_handler(CommandHandler('pendientes', self.show_pending))
+        self.application.add_handler(CommandHandler('p', self.show_pending))
+        self.application.add_handler(CommandHandler('ultimas', self.show_recent))
+        self.application.add_handler(CommandHandler('u', self.show_recent))
         self.application.add_handler(callback_handler)
         self.application.add_handler(message_handler)
 
@@ -108,11 +115,23 @@ class TransactionsBot:
                     desc = " ".join(context.args[1:]).strip()
                     
                     from datetime import datetime
+                    now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
                     transaction_data = {
                         "amount": amount,
                         "merchant": desc,
-                        "date": datetime.now().strftime("%d/%m/%Y %H:%M")
+                        "date": now_str,
+                        "source": "manual"
                     }
+                    if self.storage:
+                        tx_id = self.storage.insert_incoming_transaction(
+                            origen="manual",
+                            comercio=desc,
+                            monto=amount,
+                            fecha=now_str,
+                            usuario=self._get_user_label(),
+                            raw_text=f"/manual {amount} {desc}"
+                        )
+                        transaction_data["db_id"] = tx_id
                     
                     await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n✅ Descripción: {desc}. Clasificando...", parse_mode='Markdown')
                     asyncio.create_task(self.process_manual_transaction(transaction_data))
@@ -292,9 +311,22 @@ class TransactionsBot:
             elif status == "MANUAL_WAITING_DESC":
                 desc = update.message.text.strip()
                 session["data"]["merchant"] = desc
-                # Fake date
                 from datetime import datetime
-                session["data"]["date"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+                now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+                session["data"]["date"] = now_str
+                session["data"]["source"] = "manual"
+                
+                # Insert into storage
+                if self.storage:
+                    tx_id = self.storage.insert_incoming_transaction(
+                        origen="manual",
+                        comercio=desc,
+                        monto=session["data"]["amount"],
+                        fecha=now_str,
+                        usuario=self._get_user_label(),
+                        raw_text=f"/manual {session['data']['amount']} {desc}"
+                    )
+                    session["data"]["db_id"] = tx_id
                 
                 # Cleanup session before starting async flow to avoid stuck state
                 transaction_data = session["data"]
@@ -327,7 +359,11 @@ class TransactionsBot:
                  return
 
         if target_message_id not in self.flow_data:
-            return
+            rec = self.storage.get_by_message_id(target_message_id) if self.storage else None
+            if rec and rec.get("flow_state"):
+                self.flow_data[target_message_id] = rec["flow_state"]
+            else:
+                return
 
         state = self.flow_data[target_message_id]
         if state.get("status") != "WAITING_AMOUNT":
@@ -348,6 +384,8 @@ class TransactionsBot:
             
             # Save back
             self.flow_data[target_message_id] = state
+            if self.storage:
+                self.storage.update_flow_state(target_message_id, state, estado="EN_PROCESO")
             
             keyboard = [
                 [
@@ -395,6 +433,8 @@ class TransactionsBot:
         splits, message_id = await self.ask_user_for_category(transaction)
         
         if not splits:
+            if self.storage and message_id:
+                self.storage.mark_as_discarded(message_id)
             if self.chat_id:
                 try:
                     if message_id:
@@ -418,6 +458,14 @@ class TransactionsBot:
                 else:
                     all_saved = False
             
+            # Update SQLite status
+            if all_saved:
+                if self.storage and message_id:
+                    self.storage.mark_as_synced(message_id)
+            else:
+                if self.storage and message_id:
+                    self.storage.mark_as_error(message_id, "Error al guardar una o más filas en Google Sheets")
+
             # Confirm
             if all_saved:
                 msg_text = "💾 *Guardado Exitoso*\n\n"
@@ -444,34 +492,58 @@ class TransactionsBot:
                     msg_text += f"• *{escape_md(category)}*: ${amount:,.2f}\n"
                     msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
 
+                target_chat_id = self.chat_id
+                if not target_chat_id:
+                    if self.storage and message_id:
+                        rec = self.storage.get_by_message_id(message_id)
+                        if rec and rec.get("telegram_chat_id"):
+                            target_chat_id = rec["telegram_chat_id"]
+                    if not target_chat_id:
+                        env_chat_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
+                        if env_chat_id:
+                            target_chat_id = int(env_chat_id)
+
                 try:
                     if message_id:
-                        await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                        await self.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
                     else:
-                        await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
-                    # Effectively send the 'guardado' message so a notification is triggered
-                    await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="guardado")
+                        await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=msg_text, parse_mode='Markdown')
                 except Exception as e:
-                     logger.error(f"Failed to edit confirmation message or send guardado: {e}")
-                     # Fallback
-                     await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_text, parse_mode='Markdown')
-                     await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text="guardado")
+                     logger.warning(f"Failed to edit confirmation message with Markdown ({e}), retrying plain text...")
+                     clean_text = msg_text.replace('*', '')
+                     if message_id:
+                         try:
+                             await self.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=clean_text)
+                         except Exception as e2:
+                             logger.error(f"Fallback plain text edit failed: {e2}")
+                             await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=clean_text)
+                     else:
+                         await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=clean_text)
+                
+                # Effectively send the 'guardado' message so a notification is triggered
+                if target_chat_id:
+                    try:
+                        await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text="guardado")
+                    except Exception as ge:
+                        logger.error(f"Failed to send guardado notification: {ge}")
             else:
                  msg_err = "⚠️ Error al guardar en Google Sheets."
+                 target_chat_id = self.chat_id or (int(os.getenv("TELEGRAM_CHAT_ID_JUANMA")) if os.getenv("TELEGRAM_CHAT_ID_JUANMA") else None)
                  try:
                      if message_id:
-                         await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_err)
+                         await self.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_err)
                      else:
-                         await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_err)
+                         await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=msg_err)
                  except:
                       pass
         else:
              msg_err = "⚠️ Error: No hay conexión con Google Sheets."
+             target_chat_id = self.chat_id or (int(os.getenv("TELEGRAM_CHAT_ID_JUANMA")) if os.getenv("TELEGRAM_CHAT_ID_JUANMA") else None)
              try:
                  if message_id:
-                     await self.application.bot.edit_message_text(chat_id=self.chat_id, message_id=message_id, text=msg_err)
+                     await self.application.bot.edit_message_text(chat_id=target_chat_id, message_id=message_id, text=msg_err)
                  else:
-                     await self._retry_request(self.application.bot.send_message, chat_id=self.chat_id, text=msg_err)
+                     await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=msg_err)
              except:
                   pass
 
@@ -542,6 +614,8 @@ class TransactionsBot:
                     for k, v in prev_state.items():
                         state[k] = v
                     state["history"] = history
+                    if self.storage:
+                        self.storage.update_flow_state(message_id, state, estado="EN_PROCESO")
                     await self._render_state(update, context, message_id, query)
                 else:
                     try:
@@ -554,34 +628,74 @@ class TransactionsBot:
         if step not in ("FLOW", "CONFIRM") and value != "RESTART":
              self._save_history(message_id)
 
-        # Recovery/Check
-        if message_id not in self.flow_data and step != "VALID":
-             from telegram.error import BadRequest
-             try:
-                 await query.edit_message_text(text="⚠️ Sesión expirada. Intenta de nuevo.")
-             except BadRequest:
-                 pass # Already expired text
-             return
+        # Recovery/Check from Storage or Message Text
+        if message_id not in self.flow_data:
+            rec = self.storage.get_by_message_id(message_id) if self.storage else None
+            if rec:
+                flow_state = rec.get("flow_state") or {}
+                self.flow_data[message_id] = {
+                    "total_amount": flow_state.get("total_amount", rec["monto_total"]),
+                    "remaining_amount": flow_state.get("remaining_amount", rec["monto_total"]),
+                    "splits": flow_state.get("splits", []),
+                    "scope": flow_state.get("scope", "Personal"),
+                    "status": flow_state.get("status", "INIT"),
+                    "merchant": rec["comercio"],
+                    "date": rec["fecha_transaccion"],
+                    "user_name": rec["usuario"],
+                    "history": flow_state.get("history", []),
+                    "is_multiple": flow_state.get("is_multiple", False),
+                    "pending_category": flow_state.get("pending_category", ""),
+                    "current_split_amount": flow_state.get("current_split_amount"),
+                    "current_split_scope": flow_state.get("current_split_scope"),
+                    "current_rel_category": flow_state.get("current_rel_category"),
+                    "current_tx_type": flow_state.get("current_tx_type") or "Gasto"
+                }
+                logger.info(f"🔄 Transacción msg #{message_id} ({rec['comercio']}) restaurada desde SQLite.")
+            else:
+                parsed_ctx = self._parse_context_from_message_text(query.message.text or "")
+                if parsed_ctx and parsed_ctx.get("amount", 0) > 0:
+                    self.flow_data[message_id] = {
+                        "total_amount": parsed_ctx["amount"],
+                        "remaining_amount": parsed_ctx["amount"],
+                        "splits": [],
+                        "scope": "Personal",
+                        "status": "INIT",
+                        "merchant": parsed_ctx.get("merchant", "Desconocido"),
+                        "date": parsed_ctx.get("date", "?"),
+                        "user_name": parsed_ctx.get("user", "User"),
+                        "history": []
+                    }
+                    if self.storage:
+                        tx_id = self.storage.insert_incoming_transaction(
+                            origen="recovered_telegram",
+                            comercio=parsed_ctx.get("merchant", "Desconocido"),
+                            monto=parsed_ctx["amount"],
+                            fecha=parsed_ctx.get("date", "?"),
+                            usuario=parsed_ctx.get("user", "User")
+                        )
+                        self.storage.bind_telegram_message(tx_id, message_id, query.message.chat_id, self.flow_data[message_id])
+                    logger.info(f"🔄 Transacción msg #{message_id} recuperada desde el texto de Telegram.")
+                elif step != "VALID":
+                    from telegram.error import BadRequest
+                    try:
+                        await query.edit_message_text(text="⚠️ Sesión expirada. Intenta de nuevo.")
+                    except BadRequest:
+                        pass
+                    return
 
         if step == "VALID" or value == "RESTART": 
-             # Handle RESTART globally or specific cases
              pass
 
         # Global Redirect for RESTART from any step
         if value == "RESTART":
             print("DEBUG FLOW: Redirecting RESTART to VALID step")
-            # Trick: Treat it as was a VALID|RESTART action
             step = "VALID"
-            # (The existing logic for VALID|RESTART will catch it below)
 
         if step == "VALID":
-            # Ensure state exists (it should from ask_user)
-            if message_id not in self.flow_data:
-                # Should have been created.
-                 pass
-
             if value == "No":
                   # Cancel logic
+                  if self.storage:
+                      self.storage.mark_as_discarded(message_id)
                   state = self.flow_data.get(message_id, {})
                   merchant = state.get('merchant', 'Desconocido')
                   amount = state.get("total_amount", 0.0)
@@ -606,17 +720,26 @@ class TransactionsBot:
             
             elif value == "RESTART":
                   # Restart Logic
-                  if message_id not in self.flow_data:
-                      try:
-                         await query.edit_message_text(text="⚠️ Sesión expirada. No se puede reiniciar.")
-                      except:
-                         pass
-                      return
+                  rec = self.storage.get_by_message_id(message_id) if self.storage else None
+                  orig_amount = rec["monto_total"] if rec else self.flow_data.get(message_id, {}).get("total_amount", 0.0)
+                  orig_merchant = rec["comercio"] if rec else self.flow_data.get(message_id, {}).get("merchant", "Desconocido")
+                  orig_date = rec["fecha_transaccion"] if rec else self.flow_data.get(message_id, {}).get("date", "?")
+                  orig_user = rec["usuario"] if rec else self.flow_data.get(message_id, {}).get("user_name", "User")
 
-                  # Reset Internal State
-                  self.flow_data[message_id]["splits"] = []
-                  self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
-                  self.flow_data[message_id]["status"] = "INIT"
+                  # Reset Internal State completely with original total
+                  self.flow_data[message_id] = {
+                      "total_amount": orig_amount,
+                      "remaining_amount": orig_amount,
+                      "splits": [],
+                      "scope": "Personal",
+                      "status": "INIT",
+                      "merchant": orig_merchant,
+                      "date": orig_date,
+                      "user_name": orig_user,
+                      "history": []
+                  }
+                  if self.storage:
+                      self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="PENDIENTE_USUARIO")
                   
                   # Go back to Step 1 (Initial Alert)
                   keyboard = [
@@ -626,21 +749,14 @@ class TransactionsBot:
                      ]
                   ]
                   
-                  # Reconstruct original text
-                  merchant = self.flow_data[message_id].get('merchant', 'Desconocido')
-                  amount = self.flow_data[message_id].get("total_amount", 0.0)
-                  date = self.flow_data[message_id].get("date", "?")
-                  user = self.flow_data[message_id].get("user_name", "User")
-
-                  # We add a small visual cue that it restarted (timestamp or icon change)
                   text = (
                      f"💰 *Nueva Transacción* (Reiniciada 🔄)\n"
-                     f"👤 {escape_md(user)}\n"
-                     f"🛒 {escape_md(merchant)}\n"
-                     f"💵 ${amount:,.2f}\n"
-                     f"📅 {escape_md(date)}\n\n"
+                     f"👤 {escape_md(orig_user)}\n"
+                     f"🛒 {escape_md(orig_merchant)}\n"
+                     f"💵 ${orig_amount:,.2f}\n"
+                     f"📅 {escape_md(orig_date)}\n\n"
                      f"¿Deseas registrarla?"
-                 )
+                  )
                   
                   await query.edit_message_text(
                       text=text,
@@ -651,16 +767,20 @@ class TransactionsBot:
             else:
                   # Step 2: Multiple vs Single (VALID|Yes case)
                   if message_id not in self.flow_data:
-                      # Should have been created. If not, maybe restart?
                       self.flow_data[message_id] = {
-                          "total_amount": 0.0, # Unknown if not tracked
+                          "total_amount": 0.0,
                           "remaining_amount": 0.0,
                           "splits": [],
                           "scope": "Personal",
-                          "status": "PROCESSING"
+                          "status": "PROCESSING",
+                          "merchant": "Desconocido",
+                          "date": "?",
+                          "user_name": "User"
                       }
 
                   self.flow_data[message_id]["status"] = "WAITING_MULTIPLE"
+                  if self.storage:
+                      self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                   keyboard = [
                      [
                          InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
@@ -688,6 +808,8 @@ class TransactionsBot:
                 self.flow_data[message_id]["splits"] = [] # Clear splits if any
                 
                 self.flow_data[message_id]["status"] = "WAITING_AMOUNT"
+                if self.storage:
+                    self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                 
                 keyboard = [
                     [
@@ -703,6 +825,8 @@ class TransactionsBot:
             else:
                 # Step 3: Scope (Global for Single)
                 self.flow_data[message_id]["status"] = "WAITING_SCOPE"
+                if self.storage:
+                    self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                 keyboard = [
                     [
                         InlineKeyboardButton("🏠 Familiar", callback_data="SCOPE|Familiar"),
@@ -718,8 +842,6 @@ class TransactionsBot:
                     parse_mode='Markdown'
                 )
 
-
-
         elif step == "SCOPE":
             is_multiple = self.flow_data[message_id].get("is_multiple", False)
             
@@ -728,6 +850,8 @@ class TransactionsBot:
                 self.flow_data[message_id]["current_split_scope"] = value
                 selected_scope = value
                 self.flow_data[message_id]["status"] = "WAITING_CATEGORY"
+                if self.storage:
+                    self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                 
                 # Now ask for Category
                 keyboard = self._get_category_keyboard(selected_scope, show_back=True)
@@ -741,6 +865,8 @@ class TransactionsBot:
                 self.flow_data[message_id]["scope"] = value
                 selected_scope = value
                 self.flow_data[message_id]["status"] = "WAITING_CATEGORY"
+                if self.storage:
+                    self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                 
                 # Now ask for Category
                 keyboard = self._get_category_keyboard(selected_scope, show_back=True)
@@ -768,6 +894,8 @@ class TransactionsBot:
             if subcats:
                 # Ask for Subcategory
                 self.flow_data[message_id]["status"] = "WAITING_SUBCAT"
+                if self.storage:
+                    self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                 keyboard = self._get_subcategory_keyboard(category, scope, show_back=True)
                 await query.edit_message_text(
                     text=self._get_flow_context_header(message_id) + f"Categoría: {category}. Selecciona la subcategoría:",
@@ -792,6 +920,8 @@ class TransactionsBot:
                 state["current_rel_category"] = final_name 
                 state["status"] = "WAITING_ACTION"
                 self.flow_data[message_id] = state
+                if self.storage:
+                    self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
                 
                 keyboard = [
                     [
@@ -822,6 +952,8 @@ class TransactionsBot:
             final_name = state.get("current_rel_category")
             
             self.flow_data[message_id] = state
+            if self.storage:
+                self.storage.update_flow_state(message_id, self.flow_data[message_id], estado="EN_PROCESO")
             
             # Finalize
             await self._finalize_classification_step(update, context, message_id, final_name)
@@ -830,23 +962,90 @@ class TransactionsBot:
             action = value
             if action == "SAVE":
                 splits = self.flow_data[message_id]["splits"]
+                if self.storage:
+                    self.storage.mark_as_confirmed(message_id, splits)
+
                 if message_id in self.pending_futures:
+                     # Feedback to User while main.py handles save and final message
+                     try:
+                         await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
+                     except:
+                         pass
                      future = self.pending_futures[message_id]
                      if not future.done():
                          future.set_result(splits)
                          del self.pending_futures[message_id]
-                
-                # Feedback to User
-                try:
-                    await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
-                except:
-                    pass
+                else:
+                    # Bot was restarted while in confirmation screen!
+                    # pending_futures lost, save directly using self.loader if available
+                    if self.loader:
+                        try:
+                            try:
+                                await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
+                            except:
+                                pass
+
+                            state = self.flow_data.get(message_id, {})
+                            rec = self.storage.get_by_message_id(message_id) if self.storage else None
+                            merchant = state.get("merchant") or (rec["comercio"] if rec else "Desconocido")
+                            date = state.get("date") or (rec["fecha_transaccion"] if rec else datetime.now().strftime("%Y-%m-%d"))
+                            user_name = state.get("user_name") or (rec["usuario"] if rec else self._get_user_label(query.from_user.id))
+                            
+                            logger.info(f"Directly saving orphan/recovered transaction for message {message_id}: {splits}")
+                            for cat, scope, amt, user_who_paid, tx_type in splits:
+                                t_copy = {
+                                    'amount': amt,
+                                    'merchant': merchant,
+                                    'date': date
+                                }
+                                self.loader.append_transaction(t_copy, cat, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type or "Gasto")
+                            if self.storage:
+                                self.storage.mark_as_synced(message_id)
+
+                            # Transition from Guardando... to Guardado Exitoso!
+                            msg_text = "💾 *Guardado Exitoso* en Google Sheets.\n\n"
+                            for cat, scope, amt, user_who_paid, tx_type in splits:
+                                accumulated = 0.0
+                                if self.loader:
+                                    try:
+                                        accumulated = self.loader.get_accumulated_total(cat, scope, tx_type or "Gasto", user=user_who_paid)
+                                    except Exception:
+                                        pass
+                                msg_text += f"• *{escape_md(cat)}*: ${amt:,.2f}\n"
+                                if accumulated > 0:
+                                    msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
+
+                            try:
+                                await query.edit_message_text(text=msg_text, parse_mode='Markdown')
+                            except Exception as edit_err:
+                                logger.warning(f"Failed to edit orphan completion with Markdown ({edit_err}), retrying plain text...")
+                                clean_text = msg_text.replace('*', '')
+                                await query.edit_message_text(text=clean_text)
+
+                            # Send the 'guardado' push notification for Tasker
+                            resolved_chat_id = query.message.chat_id if query.message else self.chat_id
+                            if resolved_chat_id:
+                                try:
+                                    await self._retry_request(self.application.bot.send_message, chat_id=resolved_chat_id, text="guardado")
+                                except Exception as notif_err:
+                                    logger.error(f"Failed to send guardado notification: {notif_err}")
+
+                        except Exception as e:
+                            logger.error(f"Failed direct save of recovered transaction {message_id}: {e}")
+                            if self.storage:
+                                self.storage.mark_as_error(message_id, str(e))
+                            try:
+                                await query.edit_message_text(text=f"⚠️ Error al guardar: {e}")
+                            except:
+                                pass
 
                 # Cleanup
                 if message_id in self.flow_data:
                     del self.flow_data[message_id]
             
             elif action == "CANCEL":
+                  if self.storage:
+                      self.storage.mark_as_discarded(message_id)
                   state = self.flow_data.get(message_id, {})
                   merchant = state.get('merchant', 'Desconocido')
                   amount = state.get("total_amount", 0.0)
@@ -905,55 +1104,16 @@ class TransactionsBot:
             elif action == "CANCEL":
                 del self.recurring_sessions[user_id]
                 await query.edit_message_text(text="❌ Proceso de fijos cancelado.")
-                msg = "✅ *Registro Exitoso*\n"
-                
-                # Fetch accumulated totals
-                from datetime import datetime
-                today = datetime.now()
-                # Determine display date
-                if today.day >= 25:
-                    start_date_display = f"25/{today.month:02d}"
-                else:
-                    # Previous month logic for display
-                    # Quick hack: just say "desde el 25"
-                    start_date_display = "25" 
-
-                for cat, scope, amt, user_who_paid, tx_type in splits:
-                    accumulated = 0.0
-                    if self.loader:
-                        accumulated = self.loader.get_accumulated_total(cat, scope, tx_type, user=user_who_paid)
-                    
-                    # Logic: The transaction is saved by main.py *after* this callback finishes (or concurrently).
-                    # Since reads/writes are not instant, we assume the sheet doesn't have it yet.
-                    # We manually add the current amount to the total for display.
-                    accumulated += amt
-                    
-                    msg += f"• {escape_md(cat)}: ${amt:,.2f} (Acum: ${accumulated:,.2f})\n"
-                
-                await query.edit_message_text(text=msg, parse_mode='Markdown', reply_markup=None)
-                
-                if message_id in self.flow_data:
-                    del self.flow_data[message_id]
-
-            elif action == "RETRY":
-                # Restart
-                self.flow_data[message_id]["splits"] = []
-                self.flow_data[message_id]["remaining_amount"] = self.flow_data[message_id]["total_amount"]
-                
-                keyboard = [
-                     [
-                         InlineKeyboardButton("1️⃣ Una sola", callback_data="MULTIPLE|No"),
-                         InlineKeyboardButton("🔢 Múltiples", callback_data="MULTIPLE|Yes"),
-                     ]
-                  ]
-                await query.edit_message_text(
-                      text="🔄 Reiniciando... ¿Es una transacción Única o Múltiple?",
-                      reply_markup=InlineKeyboardMarkup(keyboard)
-                  )
 
     async def _trigger_confirmation(self, update, context, message_id, query):
         """Shows summary and asks for confirmation."""
-        splits = self.flow_data[message_id]["splits"]
+        state = self.flow_data[message_id]
+        state["status"] = "CONFIRMATION"
+        self._save_history(message_id)
+        if self.storage:
+            self.storage.update_flow_state(message_id, state, estado="EN_PROCESO")
+
+        splits = state["splits"]
         print(f"DEBUG: splits content -> {splits}")
         msg = "📝 *Resumen de la Transacción*\n\n"
         for cat, scope, amt, user, tx_type in splits:
@@ -964,11 +1124,14 @@ class TransactionsBot:
         keyboard = [
             [
                 InlineKeyboardButton("✅ Guardar", callback_data="CONFIRM|SAVE"),
+            ],
+            [
+                InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
                 InlineKeyboardButton("🔄 Reiniciar", callback_data="CONFIRM|RESTART"),
             ]
         ]
         await query.edit_message_text(
-            text=msg,
+            text=self._get_flow_context_header(message_id) + msg,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
@@ -1044,10 +1207,17 @@ class TransactionsBot:
              
         
         # Capture User Name
-        user_name = update.effective_user.first_name or "User"
+        user_name = "User"
+        if update and getattr(update, "effective_user", None):
+            fn = getattr(update.effective_user, "first_name", None)
+            if isinstance(fn, str) and fn:
+                user_name = fn
+            else:
+                uid = getattr(update.effective_user, "id", None)
+                user_name = self._get_user_label(uid if isinstance(uid, int) else None)
         
-        # Capture Type (default to Gasto if missing)
-        tx_type = state.get("current_tx_type", "Gasto")
+        # Capture Type (default to Gasto if missing or None)
+        tx_type = state.get("current_tx_type") or "Gasto"
         
         if state.get("is_multiple"):
             amount = state.get("current_split_amount", 0)
@@ -1066,6 +1236,8 @@ class TransactionsBot:
             if remaining > 1.0: # Tolerance
                     state["status"] = "WAITING_AMOUNT"
                     self.flow_data[message_id] = state
+                    if self.storage:
+                        self.storage.update_flow_state(message_id, state, estado="EN_PROCESO")
                     keyboard = [
                         [
                             InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
@@ -1083,6 +1255,8 @@ class TransactionsBot:
                     state["remaining_amount"] = total - sum(s[2] for s in state["splits"])
                     state["status"] = "WAITING_AMOUNT"
                     self.flow_data[message_id] = state
+                    if self.storage:
+                        self.storage.update_flow_state(message_id, state, estado="EN_PROCESO")
                     keyboard = [
                         [
                             InlineKeyboardButton("🔙 Atrás", callback_data="FLOW|BACK"),
@@ -1175,8 +1349,24 @@ class TransactionsBot:
             # Store metadata for Restart context
             "merchant": transaction.get('merchant', 'Desconocido'),
             "date": transaction.get('date', '?'),
-            "user_name": user_name
+            "user_name": user_name,
+            "history": []
         }
+
+        if self.storage:
+            storage_id = transaction.get("storage_id") or transaction.get("db_id")
+            if storage_id:
+                self.storage.bind_telegram_message(storage_id, message.message_id, chat_id_to_use, self.flow_data[message.message_id])
+            else:
+                s_id = self.storage.insert_incoming_transaction(
+                    origen=transaction.get("source", "notification"),
+                    comercio=transaction.get("merchant", "Desconocido"),
+                    monto=total,
+                    fecha=transaction.get("date", "?"),
+                    usuario=user_name,
+                    raw_text=transaction.get("raw_text", "")
+                )
+                self.storage.bind_telegram_message(s_id, message.message_id, chat_id_to_use, self.flow_data[message.message_id])
 
         print(f"Waiting for input on message {message.message_id}...")
         try:
@@ -1223,7 +1413,8 @@ class TransactionsBot:
         amount = state.get("total_amount", 0.0)
         date = state.get("date", "?")
         user = state.get("user_name", "User")
-        return f"🛒 *{escape_md(merchant)}* | 💵 ${amount:,.2f} | 📅 {escape_md(date)} ({escape_md(user)})\n\n"
+        clean_merchant = str(merchant).strip("* ").replace("*", " ")
+        return f"🛒 *{escape_md(clean_merchant)}* | 💵 ${amount:,.2f} | 📅 {escape_md(date)} ({escape_md(user)})\n\n"
 
     async def _render_state(self, update, context, message_id, query):
         state = self.flow_data[message_id]
@@ -1379,3 +1570,134 @@ class TransactionsBot:
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode='Markdown'
             )
+
+    def _get_user_label(self, user_id: Optional[int] = None) -> str:
+        """Helper to resolve friendly user name from user_id or bot configuration."""
+        juanma_id = os.getenv("TELEGRAM_CHAT_ID_JUANMA")
+        leydi_id = os.getenv("TELEGRAM_CHAT_ID_LEY") or os.getenv("TELEGRAM_CHAT_ID_LEYDI")
+        
+        if user_id:
+            if juanma_id and str(user_id) == str(juanma_id):
+                return "Juanma"
+            if leydi_id and str(user_id) == str(leydi_id):
+                return "Leydi"
+        if self.chat_id:
+            if juanma_id and str(self.chat_id) == str(juanma_id):
+                return "Juanma"
+            if leydi_id and str(self.chat_id) == str(leydi_id):
+                return "Leydi"
+        return "User"
+
+    def _parse_context_from_message_text(self, text: str) -> Dict[str, Any]:
+        """
+        Extracts merchant, amount, date, and user from Telegram message text as fallback.
+        Handles both initial alerts and in-flow context headers.
+        """
+        import re
+        result = {
+            "merchant": "Desconocido",
+            "amount": 0.0,
+            "date": "?",
+            "user": "User"
+        }
+        if not text:
+            return result
+        
+        # 1. Merchant: after 🛒 (up to next emoji, pipe, or newline)
+        m_match = re.search(r"🛒\s*\*?([^\n\|💵📅👤]+?)\*?(?:\s*\||\n|$)", text)
+        if m_match:
+            result["merchant"] = m_match.group(1).strip()
+            
+        # 2. Amount: after 💵 $...
+        a_match = re.search(r"💵\s*\$?([\d\.,]+)", text)
+        if a_match:
+            raw_amt = a_match.group(1).replace(",", "")
+            try:
+                result["amount"] = float(raw_amt)
+            except ValueError:
+                pass
+                
+        # 3. Date: after 📅
+        d_match = re.search(r"📅\s*([^\n\(\)]+)", text)
+        if d_match:
+            result["date"] = d_match.group(1).strip()
+            
+        # 4. User: 👤 Name or (Name)
+        u_match = re.search(r"👤\s*([^\n\(\)]+)", text)
+        if u_match:
+            result["user"] = u_match.group(1).strip()
+        else:
+            p_match = re.search(r"\((Juanma|Leydi|User)\)", text, re.IGNORECASE)
+            if p_match:
+                result["user"] = p_match.group(1).capitalize()
+                
+        return result
+
+    async def show_pending(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Displays pending transactions waiting for user categorization."""
+        if not self.storage:
+            await update.message.reply_text("ℹ️ Almacenamiento no configurado.")
+            return
+            
+        user_name = self._get_user_label(update.effective_user.id if update.effective_user else None)
+        user_filter = user_name if user_name != "User" else None
+        pending = self.storage.get_pending_transactions(usuario=user_filter)
+        if not pending and user_filter:
+            # Also fallback without user filter
+            pending = self.storage.get_pending_transactions()
+            
+        if not pending:
+            await update.message.reply_text("🎉 ¡No hay transacciones pendientes por categorizar!")
+            return
+            
+        msg = f"📋 *Transacciones Pendientes* ({len(pending)}):\n\n"
+        for idx, tx in enumerate(pending[:10], start=1):
+            comercio = tx.get("comercio", "Desconocido")
+            monto = tx.get("monto_total", 0.0)
+            fecha = tx.get("fecha_transaccion", "?")
+            estado = tx.get("estado", "PENDIENTE")
+            msg += f"{idx}. 🛒 *{escape_md(comercio)}* - ${monto:,.2f}\n"
+            msg += f"   📅 {escape_md(fecha)} | Estado: `{estado}`\n"
+            
+        if len(pending) > 10:
+            msg += f"\n_...y {len(pending) - 10} más._"
+            
+        await update.message.reply_text(msg, parse_mode='Markdown')
+
+    async def show_recent(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Displays recent transactions and their synchronization status."""
+        if not self.storage:
+            await update.message.reply_text("ℹ️ Almacenamiento no configurado.")
+            return
+            
+        user_name = self._get_user_label(update.effective_user.id if update.effective_user else None)
+        user_filter = user_name if user_name != "User" else None
+        recent = self.storage.get_recent_transactions(limit=5, usuario=user_filter)
+        if not recent and user_filter:
+            recent = self.storage.get_recent_transactions(limit=5)
+            
+        if not recent:
+            await update.message.reply_text("ℹ️ No hay transacciones registradas recientemente.")
+            return
+            
+        status_icons = {
+            "INGRESADA": "📥",
+            "PENDIENTE_USUARIO": "⏳",
+            "EN_PROCESO": "🔄",
+            "CONFIRMADA": "📝",
+            "DILIGENCIADA": "✅",
+            "DESCARTADA": "❌",
+            "ERROR_SHEETS": "⚠️"
+        }
+        
+        msg = "🕒 *Últimas Transacciones:*\n\n"
+        for tx in recent:
+            icon = status_icons.get(tx.get("estado"), "•")
+            comercio = tx.get("comercio", "Desconocido")
+            monto = tx.get("monto_total", 0.0)
+            fecha = tx.get("fecha_transaccion", "?")
+            estado = tx.get("estado", "")
+            msg += f"{icon} 🛒 *{escape_md(comercio)}* - ${monto:,.2f}\n"
+            msg += f"   📅 {escape_md(fecha)} | `{estado}`\n"
+            
+        await update.message.reply_text(msg, parse_mode='Markdown')

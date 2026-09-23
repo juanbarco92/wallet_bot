@@ -39,7 +39,7 @@ class TransactionParser:
             r"El pago de.*?a\s+(.*?)\s+fue exitoso", # Nubank Bill Payments
             r"Pagaste en\s+(.*?)\s+con\s+(?:tu|su)\s+cuenta", # Nubank PSE / Approved Payments
             r"tarjeta de beneficios Glim.*?en\s+(.*?)(?:\.|$)", # Glim Payments
-            r"\ben\s+([^.!?]*?)\s+(?:con|si tienes dudas)", # General fallback 'en MERCHANT con'
+            r"\ben\s+(.*?)\s*(?:,\s*el\b|\s+con\b|\s+si tienes dudas)", # General fallback 'en MERCHANT con/el'
             r"\ba\s+([^.!?]*?)\s*,?\s*el\s+(?:\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}|\d{2}/\d{2}|\d{4}-\d{2}-\d{2})", # General fallback 'a MERCHANT el'
         ]
         
@@ -140,7 +140,8 @@ class TransactionParser:
         for pattern in self.merchant_patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                merchant = match.group(1).strip().upper()
+                merchant = match.group(1).strip("* \t\r\n").upper()
+                merchant = re.sub(r'\s+', ' ', merchant)
                 break # Stop after first match
 
         # 3. Extract Date
