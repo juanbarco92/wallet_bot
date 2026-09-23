@@ -51,7 +51,76 @@ class TransactionParser:
         # Note: Time group 2 is now optional inside the first branch
         self.date_pattern = r"(?:(\d{2}/\d{2}/\d{4})(?:(?:\s+a\s+las\s+|\s+)(\d{2}:\d{2}))?)|(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})|(\d{4}/\d{2}/\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)"
 
-    def parse(self, text: str) -> Dict:
+    def extract_card(self, text: str, sender: Optional[str] = None) -> Optional[str]:
+        """
+        Extracts payment method or card identifier from notification text or sender.
+        E.g.: 'Bancolombia Débito *4256', 'Bancolombia Crédito *8774', 'RappiCard', 'Glim', etc.
+        """
+        if not text:
+            text = ""
+        t = text.lower()
+        s = (sender or "").lower()
+
+        # 1. Bancolombia Débito
+        m = re.search(r"t\.?\s*deb(?:ito)?\s*\*+(\d{2,4})", text, re.IGNORECASE)
+        if m:
+            return f"Bancolombia Débito *{m.group(1)}"
+        m = re.search(r"tarjeta\s+d[eé]bito\s*\*+(\d{2,4})", text, re.IGNORECASE)
+        if m:
+            return f"Bancolombia Débito *{m.group(1)}"
+        if "t.deb" in t or "tarjeta debito" in t or "tarjeta débito" in t:
+            return "Bancolombia Débito"
+
+        # 2. Bancolombia Crédito
+        m = re.search(r"t\.?\s*cred(?:ito)?\s*\*+(\d{2,4})", text, re.IGNORECASE)
+        if m:
+            return f"Bancolombia Crédito *{m.group(1)}"
+        m = re.search(r"tarjeta\s+cr[eé]dito\s*\*+(\d{2,4})", text, re.IGNORECASE)
+        if m:
+            return f"Bancolombia Crédito *{m.group(1)}"
+        if "t.cred" in t or "tarjeta credito" in t or "tarjeta crédito" in t:
+            return "Bancolombia Crédito"
+
+        # 3. Bancolombia Cuenta / Ahorros / QR / Transferencia
+        m = re.search(r"(?:desde\s+(?:tu\s+)?cuenta|cta(?:\s+de)?\s+ahorros?|cuenta)\s*\*+(\d{2,4})", text, re.IGNORECASE)
+        if m and ("bancolombia" in t or "bancolombia" in s or "qr" in t or "transfer" in t):
+            return f"Bancolombia Cta *{m.group(1)}"
+        m = re.search(r"cuenta\s+(\d{4})\b", text, re.IGNORECASE)
+        if m and ("bancolombia" in t or "bancolombia" in s):
+            return f"Bancolombia Cta *{m.group(1)}"
+
+        # 4. RappiCard
+        if "rappicard" in t or "rappi" in s or "rappicard" in s:
+            m = re.search(r"(?:terminada\s+en|tarjeta|\*)\s*(\d{4})", text, re.IGNORECASE)
+            return f"RappiCard *{m.group(1)}" if m else "RappiCard"
+
+        # 5. Glim
+        if "glim" in t or "glim" in s:
+            return "Glim"
+
+        # 6. Nu / Nubank
+        if "nubank" in t or re.search(r"\bnu\b", t) or "nu" in s:
+            if "crédito" in t or "credito" in t:
+                m = re.search(r"\*+(\d{4})", text)
+                return f"Nu Crédito *{m.group(1)}" if m else "Nu Crédito"
+            return "Cuenta Nu"
+
+        # 7. Generic card with digits
+        m = re.search(r"tarjeta\s*\*+(\d{2,4})", text, re.IGNORECASE)
+        if m:
+            return f"Tarjeta *{m.group(1)}"
+
+        # 8. Bank level fallbacks
+        if "bancolombia" in t or "bancolombia" in s:
+            return "Bancolombia"
+        if "nequi" in t or "nequi" in s:
+            return "Nequi"
+        if "daviplata" in t or "daviplata" in s:
+            return "Daviplata"
+
+        return None
+
+    def parse(self, text: str, sender: Optional[str] = None) -> Dict:
         """Parses the email body/snippet to extract transaction details."""
         # 0. Clean HTML if present
         if text and ("<html" in text.lower() or "<div" in text.lower() or "body {" in text.lower()):
@@ -62,7 +131,7 @@ class TransactionParser:
                 print(f"HTML cleaning failed: {e}")
 
         # 1. Try Regex First (Fast & Free)
-        regex_result = self._parse_regex(text)
+        regex_result = self._parse_regex(text, sender=sender)
         
         # Validation: If regex got a valid amount and merchant, return it
         if regex_result['amount'] > 0 and regex_result['merchant'] != "UNKNOWN":
@@ -76,13 +145,15 @@ class TransactionParser:
                     print(f"LLM Success: {llm_result}")
                     # Merge: use LLM values but keep original text
                     llm_result['original_text'] = text
+                    if not llm_result.get("card"):
+                        llm_result['card'] = self.extract_card(text, sender=sender)
                     return llm_result
             except Exception as e:
                 print(f"LLM Fallback failed with exception: {e}")
         
         return regex_result
 
-    def _parse_regex(self, text: str) -> Dict:
+    def _parse_regex(self, text: str, sender: Optional[str] = None) -> Dict:
         """Original Regex Logic"""
         
         # 1. Extract Amount
@@ -179,11 +250,13 @@ class TransactionParser:
             # Fallback to now if not found
             date_str = datetime.now().strftime("%d/%m/%Y %H:%M")
 
+        card = self.extract_card(text, sender=sender)
         return {
             "date": date_str,
             "amount": amount,
             "merchant": merchant,
             "description": merchant,
+            "card": card,
             "original_text": text
         }
 
@@ -213,6 +286,7 @@ class TransactionParser:
                 "amount": float(data.get("amount", 0.0)),
                 "merchant": str(data.get("merchant", "UNKNOWN")).upper(),
                 "description": str(data.get("merchant", "UNKNOWN")).upper(),
+                "card": self.extract_card(text)
             }
         except Exception as e:
             print(f"Error inside _parse_with_llm: {e}")

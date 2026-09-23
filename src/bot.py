@@ -9,6 +9,7 @@ from telegram.error import NetworkError, TimedOut, Conflict
 import logging
 from src.config import CATEGORIES_CONFIG, RECURRING_EXPENSES
 from src.storage import TransactionStorage
+from src.parser import TransactionParser
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -32,11 +33,12 @@ def escape_md(text):
 from telegram.request import HTTPXRequest
 
 class TransactionsBot:
-    def __init__(self, loader=None, token=None, notifier=None, storage=None):
+    def __init__(self, loader=None, token=None, notifier=None, storage=None, parser=None):
         self.token = token or TOKEN
         self.notifier = notifier # Callback for notifications (e.g., email)
         self.loader = loader
         self.storage = storage if storage is not None else TransactionStorage()
+        self.parser = parser or TransactionParser()
         
         self.pending_futures: Dict[str, asyncio.Future] = {}
         self.flow_data: Dict[str, Dict] = {} 
@@ -144,7 +146,8 @@ class TransactionsBot:
                         "amount": amount,
                         "merchant": desc,
                         "date": now_str,
-                        "source": "manual"
+                        "source": "manual",
+                        "card": "Manual"
                     }
                     if self.storage:
                         tx_id = self.storage.insert_incoming_transaction(
@@ -1152,10 +1155,13 @@ class TransactionsBot:
                 m_total = float(transaction.get('amount', 0.0))
                 m_date = str(transaction.get('date') or '?')
                 m_user = str(splits[0][3] if splits else 'User')
+                m_card = transaction.get('card')
+                card_line = f"💳 *Medio:* {escape_md(m_card)}\n" if m_card else ""
 
                 msg_text = (
                     f"✅ *Guardado Exitoso* en Google Sheets\n\n"
                     f"👤 *Usuario:* {escape_md(m_user)}\n"
+                    f"{card_line}"
                     f"🛒 *Comercio:* {escape_md(clean_m)}\n"
                     f"💵 *Monto:* ${m_total:,.2f}\n"
                     f"📅 *Fecha:* {escape_md(m_date)}\n\n"
@@ -1409,9 +1415,12 @@ class TransactionsBot:
                   if self.storage:
                       self.storage.mark_as_discarded(message_id, tx_id=storage_id)
                   
+                  card = state.get("card")
+                  card_line = f"💳 {escape_md(card)}\n" if card else ""
                   clean_m = str(merchant).strip("* ").replace("*", " ")
                   text = (
                       f"❌ *Transacción Descartada* ({escape_md(user)})\n"
+                      f"{card_line}"
                       f"🛒 {escape_md(clean_m)}\n"
                       f"💵 ${amount:,.2f}\n"
                       f"📅 {escape_md(date)}"
@@ -1455,6 +1464,13 @@ class TransactionsBot:
                   orig_merchant = rec["comercio"] if rec else self.flow_data.get(message_id, {}).get("merchant", "Desconocido")
                   orig_date = rec["fecha_transaccion"] if rec else self.flow_data.get(message_id, {}).get("date", "?")
                   orig_user = rec["usuario"] if rec else self.flow_data.get(message_id, {}).get("user_name", "User")
+                  rec_flow = rec.get("flow_state") if rec and isinstance(rec.get("flow_state"), dict) else {}
+                  orig_card = rec_flow.get("card") or self.flow_data.get(message_id, {}).get("card")
+                  if not orig_card and rec and rec.get("raw_text") and self.parser:
+                      try:
+                          orig_card = self.parser.extract_card(rec["raw_text"])
+                      except Exception:
+                          pass
 
                   # Reset Internal State completely with original total
                   self.flow_data[message_id] = {
@@ -1466,6 +1482,7 @@ class TransactionsBot:
                       "merchant": orig_merchant,
                       "date": orig_date,
                       "user_name": orig_user,
+                      "card": orig_card,
                       "history": []
                   }
                   if self.storage:
@@ -1479,9 +1496,11 @@ class TransactionsBot:
                      ]
                   ]
                   
+                  card_line = f"💳 *Medio:* {escape_md(orig_card)}\n" if orig_card else ""
                   text = (
                      f"💰 *Nueva Transacción* (Reiniciada 🔄)\n"
                      f"👤 {escape_md(orig_user)}\n"
+                     f"{card_line}"
                      f"🛒 {escape_md(orig_merchant)}\n"
                      f"💵 ${orig_amount:,.2f}\n"
                      f"📅 {escape_md(orig_date)}\n\n"
@@ -1991,6 +2010,15 @@ class TransactionsBot:
         except:
             total = 0.0
 
+        # Card / Payment Method
+        card = transaction.get("card")
+        if not card and transaction.get("raw_text") and self.parser:
+            try:
+                card = self.parser.extract_card(transaction.get("raw_text"))
+            except Exception:
+                pass
+        card_line = f"💳 *Medio:* {escape_md(card)}\n" if card else ""
+
         if is_quick:
             cat_full = suggestion["category_full"]
             scope_sugg = suggestion["scope"]
@@ -2005,6 +2033,7 @@ class TransactionsBot:
             ]
             text = (
                 f"💰 *Nueva Transacción Detectada* ({escape_md(user_name)})\n"
+                f"{card_line}"
                 f"🛒 {escape_md(transaction.get('merchant'))}\n"
                 f"💵 ${total:,.2f}\n"
                 f"📅 {escape_md(transaction.get('date'))}\n\n"
@@ -2020,6 +2049,7 @@ class TransactionsBot:
             ]
             text = (
                 f"💰 *Nueva Transacción Detectada* ({escape_md(user_name)})\n"
+                f"{card_line}"
                 f"🛒 {escape_md(transaction.get('merchant'))}\n"
                 f"💵 ${total:,.2f}\n"
                 f"📅 {escape_md(transaction.get('date'))}\n\n"
@@ -2056,6 +2086,7 @@ class TransactionsBot:
             "merchant": transaction.get('merchant', 'Desconocido'),
             "date": transaction.get('date', '?'),
             "user_name": user_name,
+            "card": card,
             "history": [],
             "suggestion": suggestion
         }
@@ -2100,6 +2131,7 @@ class TransactionsBot:
             "merchant": state.get("merchant", "Desconocido"),
             "date": state.get("date", "?"),
             "user_name": state.get("user_name", "User"),
+            "card": state.get("card"),
             "is_multiple": state.get("is_multiple", False),
             "pending_category": state.get("pending_category", ""),
             "current_split_amount": state.get("current_split_amount"),
@@ -2120,8 +2152,10 @@ class TransactionsBot:
         amount = state.get("total_amount", 0.0)
         date = state.get("date", "?")
         user = state.get("user_name", "User")
+        card = state.get("card")
         clean_merchant = str(merchant).strip("* ").replace("*", " ")
-        return f"🛒 *{escape_md(clean_merchant)}* | 💵 ${amount:,.2f} | 📅 {escape_md(date)} ({escape_md(user)})\n\n"
+        card_str = f" | 💳 {escape_md(card)}" if card else ""
+        return f"🛒 *{escape_md(clean_merchant)}*{card_str} | 💵 ${amount:,.2f} | 📅 {escape_md(date)} ({escape_md(user)})\n\n"
 
     async def _render_state(self, update, context, message_id, query):
         state = self.flow_data[message_id]
@@ -2139,9 +2173,12 @@ class TransactionsBot:
             amount = state.get("total_amount", 0.0)
             date = state.get("date", "?")
             user = state.get("user_name", "User")
+            card = state.get("card")
+            card_line = f"💳 *Medio:* {escape_md(card)}\n" if card else ""
             
             text = (
                 f"💰 *Nueva Transacción Detectada* ({escape_md(user)})\n"
+                f"{card_line}"
                 f"🛒 {escape_md(merchant)}\n"
                 f"💵 ${amount:,.2f}\n"
                 f"📅 {escape_md(date)}\n\n"
@@ -2297,7 +2334,7 @@ class TransactionsBot:
 
     def _parse_context_from_message_text(self, text: str) -> Dict[str, Any]:
         """
-        Extracts merchant, amount, date, and user from Telegram message text as fallback.
+        Extracts merchant, amount, date, user, and card from Telegram message text as fallback.
         Handles both initial alerts and in-flow context headers.
         """
         import re
@@ -2305,17 +2342,23 @@ class TransactionsBot:
             "merchant": "Desconocido",
             "amount": 0.0,
             "date": "?",
-            "user": "User"
+            "user": "User",
+            "card": None
         }
         if not text:
             return result
         
         # 1. Merchant: after 🛒 (up to next emoji, pipe, or newline)
-        m_match = re.search(r"🛒\s*\*?([^\n\|💵📅👤]+?)\*?(?:\s*\||\n|$)", text)
+        m_match = re.search(r"🛒\s*\*?([^\n\|💵📅👤💳]+?)\*?(?:\s*\||\n|$)", text)
         if m_match:
             result["merchant"] = m_match.group(1).strip()
+
+        # 2. Card: after 💳 (up to next emoji, pipe, or newline)
+        c_match = re.search(r"💳\s*(?:\*?Medio:\*?\s*)?([^\n\|💵📅👤🛒]+?)(?:\s*\||\n|$)", text)
+        if c_match:
+            result["card"] = c_match.group(1).strip()
             
-        # 2. Amount: after 💵 $...
+        # 3. Amount: after 💵 $...
         a_match = re.search(r"💵\s*\$?([\d\.,]+)", text)
         if a_match:
             raw_amt = a_match.group(1).replace(",", "")
@@ -2324,12 +2367,12 @@ class TransactionsBot:
             except ValueError:
                 pass
                 
-        # 3. Date: after 📅
+        # 4. Date: after 📅
         d_match = re.search(r"📅\s*([^\n\(\)]+)", text)
         if d_match:
             result["date"] = d_match.group(1).strip()
             
-        # 4. User: 👤 Name or (Name)
+        # 5. User: 👤 Name or (Name)
         u_match = re.search(r"👤\s*([^\n\(\)]+)", text)
         if u_match:
             result["user"] = u_match.group(1).strip()
@@ -2359,6 +2402,12 @@ class TransactionsBot:
                         return
 
                 flow_state = rec.get("flow_state") or {}
+                card_val = flow_state.get("card")
+                if not card_val and rec.get("raw_text") and self.parser:
+                    try:
+                        card_val = self.parser.extract_card(rec["raw_text"])
+                    except Exception:
+                        pass
                 self.flow_data[message_id] = {
                     "total_amount": flow_state.get("total_amount", rec["monto_total"]),
                     "remaining_amount": flow_state.get("remaining_amount", rec["monto_total"]),
@@ -2368,6 +2417,7 @@ class TransactionsBot:
                     "merchant": rec["comercio"],
                     "date": rec["fecha_transaccion"],
                     "user_name": rec["usuario"],
+                    "card": card_val,
                     "history": flow_state.get("history", []),
                     "storage_id": rec.get("id"),
                     "suggestion": flow_state.get("suggestion")
@@ -2462,9 +2512,18 @@ class TransactionsBot:
                 self.storage.mark_as_synced(message_id, tx_id=storage_id)
 
             clean_m = re.sub(r'\s+', ' ', str(merchant).replace('*', ' ')).strip()
+            flow_st = rec.get("flow_state") if rec and isinstance(rec.get("flow_state"), dict) else {}
+            card = state.get("card") or flow_st.get("card")
+            if not card and rec and rec.get("raw_text") and self.parser:
+                try:
+                    card = self.parser.extract_card(rec["raw_text"])
+                except Exception:
+                    pass
+            card_line = f"💳 *Medio:* {escape_md(card)}\n" if card else ""
             msg_text = (
                 f"✅ *Guardado Exitoso* en Google Sheets\n\n"
                 f"👤 *Usuario:* {escape_md(user_name)}\n"
+                f"{card_line}"
                 f"🛒 *Comercio:* {escape_md(clean_m)}\n"
                 f"💵 *Monto:* ${orig_amount:,.2f}\n"
                 f"📅 *Fecha:* {escape_md(date)}\n\n"
@@ -2528,6 +2587,15 @@ class TransactionsBot:
         fecha = tx.get("fecha_transaccion", "?")
         usuario = tx.get("usuario", user_name)
 
+        flow_st = tx.get("flow_state") if isinstance(tx.get("flow_state"), dict) else {}
+        card = flow_st.get("card")
+        if not card and tx.get("raw_text") and self.parser:
+            try:
+                card = self.parser.extract_card(tx["raw_text"])
+            except Exception:
+                pass
+        card_line = f"💳 *Medio:* {escape_md(card)}\n" if card else ""
+
         suggestion = None
         if self.storage:
             try:
@@ -2546,6 +2614,7 @@ class TransactionsBot:
             "merchant": clean_merchant,
             "date": fecha,
             "user_name": usuario,
+            "card": card,
             "history": [],
             "storage_id": tx["id"],
             "suggestion": suggestion
@@ -2575,6 +2644,7 @@ class TransactionsBot:
 
             text = (
                 f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+                f"{card_line}"
                 f"🛒 {escape_md(clean_merchant)}\n"
                 f"💵 ${monto:,.2f}\n"
                 f"📅 {escape_md(fecha)}\n\n"
@@ -2593,6 +2663,7 @@ class TransactionsBot:
 
             text = (
                 f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+                f"{card_line}"
                 f"🛒 {escape_md(clean_merchant)}\n"
                 f"💵 ${monto:,.2f}\n"
                 f"📅 {escape_md(fecha)}\n\n"
@@ -2637,7 +2708,17 @@ class TransactionsBot:
                 clean_m = str(comercio).strip("* ").replace("*", " ")
                 monto = tx.get("monto_total", 0.0)
                 fecha = tx.get("fecha_transaccion", "?")
-                msg += f"{idx}. 🛒 *{escape_md(clean_m)}* - ${monto:,.2f}\n"
+
+                flow_st = tx.get("flow_state") if isinstance(tx.get("flow_state"), dict) else {}
+                c_val = flow_st.get("card")
+                if not c_val and tx.get("raw_text") and self.parser:
+                    try:
+                        c_val = self.parser.extract_card(tx["raw_text"])
+                    except Exception:
+                        pass
+                c_suffix = f" (💳 {escape_md(c_val)})" if c_val else ""
+
+                msg += f"{idx}. 🛒 *{escape_md(clean_m)}*{c_suffix} - ${monto:,.2f}\n"
                 msg += f"   📅 {escape_md(fecha)}\n"
 
                 short_comercio = (clean_m[:14] + "…") if len(clean_m) > 14 else clean_m
@@ -2705,6 +2786,15 @@ class TransactionsBot:
             fecha = tx.get("fecha_transaccion", "?")
             usuario = tx.get("usuario", user_name)
 
+            flow_st = tx.get("flow_state") if isinstance(tx.get("flow_state"), dict) else {}
+            card = flow_st.get("card")
+            if not card and tx.get("raw_text") and self.parser:
+                try:
+                    card = self.parser.extract_card(tx["raw_text"])
+                except Exception:
+                    pass
+            card_line = f"💳 *Medio:* {escape_md(card)}\n" if card else ""
+
             keyboard = [
                 [
                     InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
@@ -2714,6 +2804,7 @@ class TransactionsBot:
             text = (
                 f"📋 *Transacciones Pendientes* (1):\n\n"
                 f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+                f"{card_line}"
                 f"🛒 {escape_md(clean_merchant)}\n"
                 f"💵 ${monto:,.2f}\n"
                 f"📅 {escape_md(fecha)}\n\n"
@@ -2746,6 +2837,7 @@ class TransactionsBot:
                     "merchant": clean_merchant,
                     "date": fecha,
                     "user_name": usuario,
+                    "card": card,
                     "history": [],
                     "storage_id": tx["id"]
                 }
@@ -2766,7 +2858,17 @@ class TransactionsBot:
             clean_m = str(comercio).strip("* ").replace("*", " ")
             monto = tx.get("monto_total", 0.0)
             fecha = tx.get("fecha_transaccion", "?")
-            msg += f"{idx}. 🛒 *{escape_md(clean_m)}* - ${monto:,.2f}\n"
+
+            flow_st = tx.get("flow_state") if isinstance(tx.get("flow_state"), dict) else {}
+            c_val = flow_st.get("card")
+            if not c_val and tx.get("raw_text") and self.parser:
+                try:
+                    c_val = self.parser.extract_card(tx["raw_text"])
+                except Exception:
+                    pass
+            c_suffix = f" (💳 {escape_md(c_val)})" if c_val else ""
+
+            msg += f"{idx}. 🛒 *{escape_md(clean_m)}*{c_suffix} - ${monto:,.2f}\n"
             msg += f"   📅 {escape_md(fecha)}\n"
 
             short_comercio = (clean_m[:14] + "…") if len(clean_m) > 14 else clean_m
@@ -2825,7 +2927,17 @@ class TransactionsBot:
             monto = tx.get("monto_total", 0.0)
             fecha = tx.get("fecha_transaccion", "?")
             estado = tx.get("estado", "")
-            msg += f"{icon} 🛒 *{escape_md(clean_m)}* - ${monto:,.2f}\n"
+
+            flow_st = tx.get("flow_state") if isinstance(tx.get("flow_state"), dict) else {}
+            c_val = flow_st.get("card")
+            if not c_val and tx.get("raw_text") and self.parser:
+                try:
+                    c_val = self.parser.extract_card(tx["raw_text"])
+                except Exception:
+                    pass
+            c_suffix = f" (💳 {escape_md(c_val)})" if c_val else ""
+
+            msg += f"{icon} 🛒 *{escape_md(clean_m)}*{c_suffix} - ${monto:,.2f}\n"
             msg += f"   📅 {escape_md(fecha)} | `{estado}`\n"
             
         try:

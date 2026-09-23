@@ -55,7 +55,9 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
         # 2. Parse
         # Prefer body, fallback to snippet
         text_to_parse = email_data.get('body') or email_data.get('snippet', '')
-        transaction = parser.parse(text_to_parse)
+        transaction = parser.parse(text_to_parse, sender=original_sender)
+        if not transaction.get('card'):
+            transaction['card'] = parser.extract_card(text_to_parse, sender=original_sender)
         
         # Log deep warning if parsing is incomplete or ambiguous
         if transaction.get('merchant') == 'UNKNOWN' or transaction.get('amount', 0.0) == 0.0:
@@ -178,9 +180,12 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                                resolved_chat_id = int(env_chat_id)
                 try:
                     clean_m = re.sub(r'\s+', ' ', str(tx_merchant or "Desconocido").replace('*', ' ')).strip()
+                    card = transaction.get("card")
+                    card_line = f"💳 *Medio:* {escape_md(card)}\n" if card else ""
                     msg_text = (
                         f"✅ *Guardado Exitoso* en Google Sheets\n\n"
                         f"👤 *Usuario:* {escape_md(target_user)}\n"
+                        f"{card_line}"
                         f"🛒 *Comercio:* {escape_md(clean_m)}\n"
                         f"💵 *Monto:* ${tx_amount:,.2f}\n"
                         f"📅 *Fecha:* {escape_md(tx_date or '?')}\n\n"
@@ -317,11 +322,16 @@ async def tasker_webhook_handler(request):
             return web.json_response({"error": "Invalid payload, 'amount' and 'merchant' required, or valid 'texto'"}, status=400)
             
         now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        parser_inst = request.app.get("parser")
+        parsed_card = None
+        if parser_inst and texto:
+            parsed_card = parser_inst.extract_card(str(texto))
         transaction_data = {
             "amount": float(amount),
             "merchant": str(merchant),
             "date": now_str,
             "source": "tasker",
+            "card": parsed_card or "Tasker",
             "raw_text": str(texto or "")
         }
         
@@ -475,7 +485,7 @@ async def main():
     token_leydi = os.getenv("TELEGRAM_TOKEN_LEY")
     
     # Pass notifier and storage to bot
-    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user, storage=storage)
+    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user, storage=storage, parser=parser)
     bot_leydi = None
     
     # Start Polling
@@ -486,7 +496,7 @@ async def main():
     bots = {"Juanma": bot_juanma}
 
     if token_leydi:
-        bot_leydi = TransactionsBot(token=token_leydi, loader=loader, storage=storage) # Leydi relies on Juanma's stability or separate handler?
+        bot_leydi = TransactionsBot(token=token_leydi, loader=loader, storage=storage, parser=parser) # Leydi relies on Juanma's stability or separate handler?
         await bot_leydi.start_polling()
         bots["Leydi"] = bot_leydi
         logger.info("Bot Leydi started.")
