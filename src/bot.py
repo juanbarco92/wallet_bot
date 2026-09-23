@@ -604,6 +604,11 @@ class TransactionsBot:
         step, value = data.split("|", 1)
         print(f"DEBUG FLOW: Recv Data={data} -> Step={step}, Value={value}")
 
+        # PEND step handler (Resume/categorize from pending list)
+        if step == "PEND":
+            await self._handle_pending_callback(update, context, query, value)
+            return
+
         # FLOW|BACK handler
         if step == "FLOW" and value == "BACK":
             if message_id in self.flow_data:
@@ -694,17 +699,20 @@ class TransactionsBot:
         if step == "VALID":
             if value == "No":
                   # Cancel logic
-                  if self.storage:
-                      self.storage.mark_as_discarded(message_id)
                   state = self.flow_data.get(message_id, {})
                   merchant = state.get('merchant', 'Desconocido')
                   amount = state.get("total_amount", 0.0)
                   date = state.get("date", "?")
                   user = state.get("user_name", "User")
+                  storage_id = state.get("storage_id")
+
+                  if self.storage:
+                      self.storage.mark_as_discarded(message_id, tx_id=storage_id)
                   
+                  clean_m = str(merchant).strip("* ").replace("*", " ")
                   text = (
                       f"❌ *Transacción Descartada* ({escape_md(user)})\n"
-                      f"🛒 {escape_md(merchant)}\n"
+                      f"🛒 {escape_md(clean_m)}\n"
                       f"💵 ${amount:,.2f}\n"
                       f"📅 {escape_md(date)}"
                   ) if state else "❌ Transacción descartada."
@@ -716,7 +724,29 @@ class TransactionsBot:
                           del self.pending_futures[message_id]
                   if message_id in self.flow_data:
                       del self.flow_data[message_id]
-                  await query.edit_message_text(text=text, parse_mode='Markdown')
+
+                  user_filter = user if user != "User" else None
+                  remaining = self.storage.get_pending_transactions(usuario=user_filter) if self.storage else []
+                  discard_keyboard = None
+                  if isinstance(remaining, list) and len(remaining) > 0:
+                      next_tx = remaining[0]
+                      if isinstance(next_tx, dict):
+                          text += f"\n\n📌 Te quedan *{len(remaining)}* transacciones pendientes:"
+                          clean_nm = str(next_tx.get("comercio", "Desconocido")).strip("* ").replace("*", " ")
+                          short_m = (clean_nm[:14] + "…") if len(clean_nm) > 14 else clean_nm
+                          m_val = float(next_tx.get("monto_total", 0.0))
+                          buttons = [
+                              [InlineKeyboardButton(f"📝 Siguiente: {short_m} (${m_val:,.0f})", callback_data=f"PEND|SELECT_{next_tx.get('id', 0)}")],
+                          ]
+                          if len(remaining) > 1:
+                              buttons.append([InlineKeyboardButton("📋 Ver lista de pendientes", callback_data="PEND|LIST")])
+                          discard_keyboard = InlineKeyboardMarkup(buttons)
+
+                  try:
+                      await query.edit_message_text(text=text, reply_markup=discard_keyboard, parse_mode='Markdown')
+                  except Exception as e:
+                      clean_text = text.replace('*', '')
+                      await query.edit_message_text(text=clean_text, reply_markup=discard_keyboard)
             
             elif value == "RESTART":
                   # Restart Logic
@@ -999,8 +1029,9 @@ class TransactionsBot:
                                     'date': date
                                 }
                                 self.loader.append_transaction(t_copy, cat, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type or "Gasto")
+                            storage_id = state.get("storage_id")
                             if self.storage:
-                                self.storage.mark_as_synced(message_id)
+                                self.storage.mark_as_synced(message_id, tx_id=storage_id)
 
                             # Transition from Guardando... to Guardado Exitoso!
                             msg_text = "💾 *Guardado Exitoso* en Google Sheets.\n\n"
@@ -1015,12 +1046,31 @@ class TransactionsBot:
                                 if accumulated > 0:
                                     msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
 
+                            # Check if user has more pending transactions
+                            user_filter = user_name if user_name != "User" else None
+                            remaining_pending = self.storage.get_pending_transactions(usuario=user_filter) if self.storage else []
+                            next_keyboard = None
+                            if isinstance(remaining_pending, list) and len(remaining_pending) > 0:
+                                count = len(remaining_pending)
+                                next_tx = remaining_pending[0]
+                                if isinstance(next_tx, dict):
+                                    msg_text += f"\n📌 Te quedan *{count}* transacciones pendientes:"
+                                    clean_nm = str(next_tx.get("comercio", "Desconocido")).strip("* ").replace("*", " ")
+                                    short_m = (clean_nm[:14] + "…") if len(clean_nm) > 14 else clean_nm
+                                    m_val = float(next_tx.get("monto_total", 0.0))
+                                    buttons = [
+                                        [InlineKeyboardButton(f"📝 Categorizar: {short_m} (${m_val:,.0f})", callback_data=f"PEND|SELECT_{next_tx.get('id', 0)}")],
+                                    ]
+                                    if count > 1:
+                                        buttons.append([InlineKeyboardButton("📋 Ver todas las pendientes", callback_data="PEND|LIST")])
+                                    next_keyboard = InlineKeyboardMarkup(buttons)
+
                             try:
-                                await query.edit_message_text(text=msg_text, parse_mode='Markdown')
+                                await query.edit_message_text(text=msg_text, reply_markup=next_keyboard, parse_mode='Markdown')
                             except Exception as edit_err:
                                 logger.warning(f"Failed to edit orphan completion with Markdown ({edit_err}), retrying plain text...")
                                 clean_text = msg_text.replace('*', '')
-                                await query.edit_message_text(text=clean_text)
+                                await query.edit_message_text(text=clean_text, reply_markup=next_keyboard)
 
                             # Send the 'guardado' push notification for Tasker
                             resolved_chat_id = query.message.chat_id if query.message else self.chat_id
@@ -1633,8 +1683,138 @@ class TransactionsBot:
                 
         return result
 
+    async def _render_single_pending(self, query, tx: Dict, message_id: int, user_name: str, show_back_to_list: bool = False):
+        """Renders the initial categorization alert for a single pending transaction."""
+        comercio = tx.get("comercio", "Desconocido")
+        clean_merchant = str(comercio).strip("* ").replace("*", " ")
+        monto = tx.get("monto_total", 0.0)
+        fecha = tx.get("fecha_transaccion", "?")
+        usuario = tx.get("usuario", user_name)
+
+        self.flow_data[message_id] = {
+            "total_amount": monto,
+            "remaining_amount": monto,
+            "splits": [],
+            "scope": "Personal",
+            "status": "INIT",
+            "merchant": clean_merchant,
+            "date": fecha,
+            "user_name": usuario,
+            "history": [],
+            "storage_id": tx["id"]
+        }
+
+        if self.storage:
+            chat_id = query.message.chat_id if query.message else self.chat_id
+            self.storage.bind_telegram_message(
+                tx["id"],
+                message_id,
+                chat_id,
+                self.flow_data[message_id]
+            )
+
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                InlineKeyboardButton("❌ Descartar", callback_data="VALID|No"),
+            ]
+        ]
+        if show_back_to_list:
+            keyboard.append([InlineKeyboardButton("📋 Volver a la lista", callback_data="PEND|LIST")])
+
+        text = (
+            f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+            f"🛒 {escape_md(clean_merchant)}\n"
+            f"💵 ${monto:,.2f}\n"
+            f"📅 {escape_md(fecha)}\n\n"
+            f"¿Deseas registrarla?"
+        )
+        try:
+            await query.edit_message_text(
+                text=text,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.warning(f"Markdown edit failed in _render_single_pending ({e}), retrying plain text...")
+            clean_text = text.replace('*', '')
+            await query.edit_message_text(
+                text=clean_text,
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+
+    async def _handle_pending_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE, query, value: str):
+        """Handles PEND step callbacks for resuming or selecting pending transactions."""
+        message_id = query.message.message_id
+        user_name = self._get_user_label(query.from_user.id if query.from_user else None)
+        user_filter = user_name if user_name != "User" else None
+
+        if value == "LIST":
+            pending = self.storage.get_pending_transactions(usuario=user_filter) if self.storage else []
+            if not pending:
+                await query.edit_message_text("🎉 ¡No tienes transacciones pendientes por categorizar!")
+                return
+            
+            if len(pending) == 1:
+                tx = pending[0]
+                await self._render_single_pending(query, tx, message_id, user_name, show_back_to_list=False)
+                return
+
+            msg = f"📋 *Transacciones Pendientes* ({len(pending)}):\n\n"
+            keyboard = []
+            for idx, tx in enumerate(pending[:8], start=1):
+                comercio = tx.get("comercio", "Desconocido")
+                clean_m = str(comercio).strip("* ").replace("*", " ")
+                monto = tx.get("monto_total", 0.0)
+                fecha = tx.get("fecha_transaccion", "?")
+                msg += f"{idx}. 🛒 *{escape_md(clean_m)}* - ${monto:,.2f}\n"
+                msg += f"   📅 {escape_md(fecha)}\n"
+
+                short_comercio = (clean_m[:14] + "…") if len(clean_m) > 14 else clean_m
+                btn_text = f"{idx}. {short_comercio} (${monto:,.0f})"
+                keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"PEND|SELECT_{tx['id']}")])
+
+            msg += "\n👇 *Toca una para categorizarla ahora:*"
+            if len(pending) > 8:
+                msg += f"\n_...y {len(pending) - 8} más._"
+
+            try:
+                await query.edit_message_text(
+                    text=msg,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.warning(f"Markdown edit failed in PEND|LIST ({e}), retrying plain text...")
+                clean_text = msg.replace('*', '')
+                await query.edit_message_text(
+                    text=clean_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+            return
+
+        elif value.startswith("SELECT_"):
+            tx_id_str = value.replace("SELECT_", "")
+            try:
+                tx_id = int(tx_id_str)
+            except ValueError:
+                await query.answer("ID de transacción inválido.")
+                return
+
+            tx = self.storage.get_by_id(tx_id) if self.storage else None
+            if not tx or tx.get("estado") in ("DILIGENCIADA", "DESCARTADA"):
+                await query.answer("Esta transacción ya fue procesada o descartada.")
+                pending = self.storage.get_pending_transactions(usuario=user_filter) if self.storage else []
+                if not pending:
+                    await query.edit_message_text("🎉 ¡No tienes transacciones pendientes por categorizar!")
+                else:
+                    await self._handle_pending_callback(update, context, query, "LIST")
+                return
+
+            await self._render_single_pending(query, tx, message_id, user_name, show_back_to_list=True)
+
     async def show_pending(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Displays pending transactions waiting for user categorization."""
+        """Displays pending transactions waiting for user categorization with inline actions."""
         if not self.storage:
             await update.message.reply_text("ℹ️ Almacenamiento no configurado.")
             return
@@ -1646,20 +1826,102 @@ class TransactionsBot:
         if not pending:
             await update.message.reply_text("🎉 ¡No tienes transacciones pendientes por categorizar!")
             return
-            
-        msg = f"📋 *Transacciones Pendientes* ({len(pending)}):\n\n"
-        for idx, tx in enumerate(pending[:10], start=1):
+
+        if len(pending) == 1:
+            tx = pending[0]
             comercio = tx.get("comercio", "Desconocido")
+            clean_merchant = str(comercio).strip("* ").replace("*", " ")
             monto = tx.get("monto_total", 0.0)
             fecha = tx.get("fecha_transaccion", "?")
-            estado = tx.get("estado", "PENDIENTE")
-            msg += f"{idx}. 🛒 *{escape_md(comercio)}* - ${monto:,.2f}\n"
-            msg += f"   📅 {escape_md(fecha)} | Estado: `{estado}`\n"
-            
-        if len(pending) > 10:
-            msg += f"\n_...y {len(pending) - 10} más._"
-            
-        await update.message.reply_text(msg, parse_mode='Markdown')
+            usuario = tx.get("usuario", user_name)
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                    InlineKeyboardButton("❌ Descartar", callback_data="VALID|No"),
+                ]
+            ]
+            text = (
+                f"📋 *Transacciones Pendientes* (1):\n\n"
+                f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+                f"🛒 {escape_md(clean_merchant)}\n"
+                f"💵 ${monto:,.2f}\n"
+                f"📅 {escape_md(fecha)}\n\n"
+                f"¿Deseas registrarla?"
+            )
+            try:
+                sent_msg = await self._retry_request(
+                    update.message.reply_text,
+                    text,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.warning(f"Markdown reply failed in show_pending ({e}), retrying plain text...")
+                clean_text = text.replace('*', '')
+                sent_msg = await self._retry_request(
+                    update.message.reply_text,
+                    clean_text,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+
+            msg_id = getattr(sent_msg, 'message_id', None)
+            if msg_id and isinstance(msg_id, int):
+                self.flow_data[msg_id] = {
+                    "total_amount": monto,
+                    "remaining_amount": monto,
+                    "splits": [],
+                    "scope": "Personal",
+                    "status": "INIT",
+                    "merchant": clean_merchant,
+                    "date": fecha,
+                    "user_name": usuario,
+                    "history": [],
+                    "storage_id": tx["id"]
+                }
+                chat_id = update.effective_chat.id if update.effective_chat else self.chat_id
+                self.storage.bind_telegram_message(
+                    tx["id"],
+                    msg_id,
+                    chat_id,
+                    self.flow_data[msg_id]
+                )
+            return
+
+        # Multiple pending transactions
+        msg = f"📋 *Transacciones Pendientes* ({len(pending)}):\n\n"
+        keyboard = []
+        for idx, tx in enumerate(pending[:8], start=1):
+            comercio = tx.get("comercio", "Desconocido")
+            clean_m = str(comercio).strip("* ").replace("*", " ")
+            monto = tx.get("monto_total", 0.0)
+            fecha = tx.get("fecha_transaccion", "?")
+            msg += f"{idx}. 🛒 *{escape_md(clean_m)}* - ${monto:,.2f}\n"
+            msg += f"   📅 {escape_md(fecha)}\n"
+
+            short_comercio = (clean_m[:14] + "…") if len(clean_m) > 14 else clean_m
+            btn_text = f"{idx}. {short_comercio} (${monto:,.0f})"
+            keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"PEND|SELECT_{tx['id']}")])
+
+        msg += "\n👇 *Toca una para categorizarla ahora:*"
+        if len(pending) > 8:
+            msg += f"\n_...y {len(pending) - 8} más._"
+
+        try:
+            await self._retry_request(
+                update.message.reply_text,
+                msg,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            logger.warning(f"Markdown reply failed in show_pending multiple ({e}), retrying plain text...")
+            clean_text = msg.replace('*', '')
+            await self._retry_request(
+                update.message.reply_text,
+                clean_text,
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
 
     async def show_recent(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Displays recent transactions and their synchronization status."""

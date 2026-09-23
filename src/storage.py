@@ -114,6 +114,20 @@ class TransactionStorage:
         """
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         state_json = json.dumps(initial_flow_state, default=str) if initial_flow_state else None
+        
+        # Ensure integers for database binding
+        if not isinstance(telegram_message_id, int):
+            try:
+                telegram_message_id = int(telegram_message_id)
+            except (ValueError, TypeError):
+                telegram_message_id = None
+
+        if not isinstance(telegram_chat_id, int):
+            try:
+                telegram_chat_id = int(telegram_chat_id)
+            except (ValueError, TypeError):
+                telegram_chat_id = None
+
         with self._connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -159,86 +173,133 @@ class TransactionStorage:
         self,
         telegram_message_id: int,
         flow_state: Dict[str, Any],
-        estado: str = 'EN_PROCESO'
+        estado: str = 'EN_PROCESO',
+        tx_id: Optional[int] = None
     ) -> bool:
         """Updates the interactive flow state and optionally the transaction state."""
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         state_json = json.dumps(flow_state, default=str)
         with self._connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE transacciones_log
-                SET flow_state = ?,
-                    estado = ?,
-                    updated_at = ?
-                WHERE telegram_message_id = ?
-            """, (state_json, estado, now_str, telegram_message_id))
+            if tx_id:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET flow_state = ?,
+                        estado = ?,
+                        updated_at = ?
+                    WHERE id = ? OR telegram_message_id = ?
+                """, (state_json, estado, now_str, tx_id, telegram_message_id))
+            else:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET flow_state = ?,
+                        estado = ?,
+                        updated_at = ?
+                    WHERE telegram_message_id = ?
+                """, (state_json, estado, now_str, telegram_message_id))
             conn.commit()
             return cursor.rowcount > 0
 
-    def mark_as_discarded(self, telegram_message_id: int) -> bool:
+    def mark_as_discarded(self, telegram_message_id: int, tx_id: Optional[int] = None) -> bool:
         """Marks the transaction as DESCARTADA by user choice."""
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE transacciones_log
-                SET estado = 'DESCARTADA',
-                    respondido_el = ?,
-                    updated_at = ?
-                WHERE telegram_message_id = ?
-            """, (now_str, now_str, telegram_message_id))
+            if tx_id:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'DESCARTADA',
+                        respondido_el = ?,
+                        updated_at = ?
+                    WHERE id = ? OR telegram_message_id = ?
+                """, (now_str, now_str, tx_id, telegram_message_id))
+            else:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'DESCARTADA',
+                        respondido_el = ?,
+                        updated_at = ?
+                    WHERE telegram_message_id = ?
+                """, (now_str, now_str, telegram_message_id))
             conn.commit()
             logger.info(f"Transacción msg #{telegram_message_id} marcada como DESCARTADA.")
             return cursor.rowcount > 0
 
-    def mark_as_confirmed(self, telegram_message_id: int, splits: List[Any]) -> bool:
+    def mark_as_confirmed(self, telegram_message_id: int, splits: List[Any], tx_id: Optional[int] = None) -> bool:
         """Marks the transaction as CONFIRMADA with its finalized splits details."""
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         # Ensure splits are serialized cleanly
         splits_json = json.dumps([list(s) if isinstance(s, tuple) else s for s in splits], default=str)
         with self._connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE transacciones_log
-                SET estado = 'CONFIRMADA',
-                    splits_detalle = ?,
-                    respondido_el = ?,
-                    updated_at = ?
-                WHERE telegram_message_id = ?
-            """, (splits_json, now_str, now_str, telegram_message_id))
+            if tx_id:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'CONFIRMADA',
+                        splits_detalle = ?,
+                        respondido_el = ?,
+                        updated_at = ?
+                    WHERE id = ? OR telegram_message_id = ?
+                """, (splits_json, now_str, now_str, tx_id, telegram_message_id))
+            else:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'CONFIRMADA',
+                        splits_detalle = ?,
+                        respondido_el = ?,
+                        updated_at = ?
+                    WHERE telegram_message_id = ?
+                """, (splits_json, now_str, now_str, telegram_message_id))
             conn.commit()
             logger.info(f"Transacción msg #{telegram_message_id} marcada como CONFIRMADA con splits: {splits}")
             return cursor.rowcount > 0
 
-    def mark_as_synced(self, telegram_message_id: int) -> bool:
+    def mark_as_synced(self, telegram_message_id: int, tx_id: Optional[int] = None) -> bool:
         """Marks the transaction as DILIGENCIADA after successfully saving to Google Sheets."""
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE transacciones_log
-                SET estado = 'DILIGENCIADA',
-                    sincronizado_el = ?,
-                    updated_at = ?
-                WHERE telegram_message_id = ?
-            """, (now_str, now_str, telegram_message_id))
+            if tx_id:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'DILIGENCIADA',
+                        sincronizado_el = ?,
+                        updated_at = ?
+                    WHERE id = ? OR telegram_message_id = ?
+                """, (now_str, now_str, tx_id, telegram_message_id))
+            else:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'DILIGENCIADA',
+                        sincronizado_el = ?,
+                        updated_at = ?
+                    WHERE telegram_message_id = ?
+                """, (now_str, now_str, telegram_message_id))
             conn.commit()
             logger.info(f"Transacción msg #{telegram_message_id} marcada como DILIGENCIADA en Google Sheets.")
             return cursor.rowcount > 0
 
-    def mark_as_error(self, telegram_message_id: int, error_msg: str) -> bool:
+    def mark_as_error(self, telegram_message_id: int, error_msg: str, tx_id: Optional[int] = None) -> bool:
         """Marks the transaction as ERROR_SHEETS recording the error description."""
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE transacciones_log
-                SET estado = 'ERROR_SHEETS',
-                    error_log = ?,
-                    updated_at = ?
-                WHERE telegram_message_id = ?
-            """, (error_msg, now_str, telegram_message_id))
+            if tx_id:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'ERROR_SHEETS',
+                        error_log = ?,
+                        updated_at = ?
+                    WHERE id = ? OR telegram_message_id = ?
+                """, (error_msg, now_str, tx_id, telegram_message_id))
+            else:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'ERROR_SHEETS',
+                        error_log = ?,
+                        updated_at = ?
+                    WHERE telegram_message_id = ?
+                """, (error_msg, now_str, telegram_message_id))
             conn.commit()
             logger.warning(f"Transacción msg #{telegram_message_id} marcada como ERROR_SHEETS: {error_msg}")
             return cursor.rowcount > 0

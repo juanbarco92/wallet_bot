@@ -10,6 +10,7 @@ from src.parser import TransactionParser, Classifier
 from src.bot import TransactionsBot, escape_md
 from src.loader import SheetsLoader
 from src.storage import TransactionStorage
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from dotenv import load_dotenv
 
 # Configure logging
@@ -158,17 +159,35 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                              logger.error(f"Error calculating accumulation for UI: {exc}")
                              msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}"
 
+                    user_filter = target_user if target_user in ("Juanma", "Leydi") else None
+                    remaining_pending = current_bot.storage.get_pending_transactions(usuario=user_filter) if hasattr(current_bot, 'storage') and current_bot.storage else []
+                    next_keyboard = None
+                    if isinstance(remaining_pending, list) and len(remaining_pending) > 0:
+                        count = len(remaining_pending)
+                        next_tx = remaining_pending[0]
+                        if isinstance(next_tx, dict):
+                            msg_text += f"\n\n📌 Te quedan *{count}* transacciones pendientes:"
+                            clean_nm = str(next_tx.get("comercio", "Desconocido")).strip("* ").replace("*", " ")
+                            short_m = (clean_nm[:14] + "…") if len(clean_nm) > 14 else clean_nm
+                            m_val = float(next_tx.get("monto_total", 0.0))
+                            buttons = [
+                                [InlineKeyboardButton(f"📝 Categorizar: {short_m} (${m_val:,.0f})", callback_data=f"PEND|SELECT_{next_tx.get('id', 0)}")],
+                            ]
+                            if count > 1:
+                                buttons.append([InlineKeyboardButton("📋 Ver pendientes", callback_data="PEND|LIST")])
+                            next_keyboard = InlineKeyboardMarkup(buttons)
+
                     try:
-                        await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=msg_text, parse_mode='Markdown')
+                        await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=msg_text, reply_markup=next_keyboard, parse_mode='Markdown')
                     except Exception as e:
                         logger.warning(f"Failed to edit completion message with Markdown ({e}), retrying plain text...")
                         clean_text = msg_text.replace('*', '')
                         try:
-                            await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=clean_text)
+                            await current_bot.application.bot.edit_message_text(chat_id=resolved_chat_id, message_id=message_id, text=clean_text, reply_markup=next_keyboard)
                         except Exception as edit_err:
                             logger.error(f"Fallback plain text edit failed: {edit_err}")
                             try:
-                                await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=clean_text)
+                                await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=clean_text, reply_markup=next_keyboard)
                             except Exception as fallback_e:
                                 logger.error(f"Fallback send_message failed: {fallback_e}")
 
