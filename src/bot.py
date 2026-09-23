@@ -1326,6 +1326,17 @@ class TransactionsBot:
         if message_id not in self.flow_data:
             rec = self.storage.get_by_message_id(message_id) if self.storage else None
             if rec:
+                estado = rec.get("estado")
+                ext_id = rec.get("external_id")
+                if estado in ("DILIGENCIADA", "DESCARTADA"):
+                    await query.edit_message_text(text="✅ Esta transacción ya fue procesada anteriormente.")
+                    return
+                if ext_id:
+                    ext_tx = self.storage.get_by_external_id(ext_id)
+                    if ext_tx and ext_tx.get("estado") in ("DILIGENCIADA", "DESCARTADA"):
+                        await query.edit_message_text(text="✅ Esta transacción ya fue procesada anteriormente.")
+                        return
+
                 flow_state = rec.get("flow_state") or {}
                 self.flow_data[message_id] = {
                     "total_amount": flow_state.get("total_amount", rec["monto_total"]),
@@ -2336,6 +2347,17 @@ class TransactionsBot:
         if message_id not in self.flow_data:
             rec = self.storage.get_by_message_id(message_id) if self.storage else None
             if rec:
+                estado = rec.get("estado")
+                ext_id = rec.get("external_id")
+                if estado in ("DILIGENCIADA", "DESCARTADA"):
+                    await query.edit_message_text(text="✅ Esta transacción ya fue procesada anteriormente.")
+                    return
+                if ext_id:
+                    ext_tx = self.storage.get_by_external_id(ext_id)
+                    if ext_tx and ext_tx.get("estado") in ("DILIGENCIADA", "DESCARTADA"):
+                        await query.edit_message_text(text="✅ Esta transacción ya fue procesada anteriormente.")
+                        return
+
                 flow_state = rec.get("flow_state") or {}
                 self.flow_data[message_id] = {
                     "total_amount": flow_state.get("total_amount", rec["monto_total"]),

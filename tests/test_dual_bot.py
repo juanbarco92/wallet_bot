@@ -25,10 +25,16 @@ class TestDualBotRouting(unittest.IsolatedAsyncioTestCase):
         # 1. Setup Mocks
         mock_bot_juanma = AsyncMock()
         mock_bot_juanma.chat_id = 123
+        mock_bot_juanma.storage = MagicMock()
+        mock_bot_juanma.storage.get_by_external_id.return_value = None
+        mock_bot_juanma.storage.insert_incoming_transaction.return_value = 1
         mock_bot_juanma.ask_user_for_category.return_value = ([], None) # Simulate user skipped
         
         mock_bot_leydi = AsyncMock()
         mock_bot_leydi.chat_id = 456
+        mock_bot_leydi.storage = MagicMock()
+        mock_bot_leydi.storage.get_by_external_id.return_value = None
+        mock_bot_leydi.storage.insert_incoming_transaction.return_value = 2
         mock_bot_leydi.ask_user_for_category.return_value = ([], None) 
         
         bots = {

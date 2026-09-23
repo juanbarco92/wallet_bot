@@ -76,7 +76,27 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
             gmail.mark_as_read(email_id)
             return
 
-        # 2.5 Deduplication Check
+        # 2.4 SQLite Deduplication Check by external_id (email_id)
+        if email_id and hasattr(current_bot, 'storage') and current_bot.storage:
+            try:
+                existing_tx = current_bot.storage.get_by_external_id(email_id)
+                if existing_tx:
+                    state = existing_tx.get("estado")
+                    if state == "DILIGENCIADA":
+                        logger.info(f"Email {email_id} was already completed in Sheets (tx #{existing_tx['id']}). Marking as read in Gmail.")
+                        gmail.mark_as_read(email_id)
+                        return
+                    elif state == "DESCARTADA":
+                        logger.info(f"Email {email_id} was discarded (tx #{existing_tx['id']}). Marking as read in Gmail.")
+                        gmail.mark_as_read(email_id)
+                        return
+                    else:
+                        logger.info(f"Email {email_id} already ingested in SQLite (tx #{existing_tx['id']}, state={state}). Skipping duplicate prompt to Telegram.")
+                        return
+            except Exception as e:
+                logger.error(f"Error checking SQLite deduplication for email {email_id}: {e}")
+
+        # 2.5 Google Sheets Deduplication Check
         try:
             tx_date = transaction.get('date')
             if loader.transaction_exists(tx_date, tx_amount, tx_merchant) is True:

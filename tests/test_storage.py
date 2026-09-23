@@ -121,5 +121,72 @@ class TestTransactionStorage(unittest.TestCase):
         recent = self.storage.get_recent_transactions(usuario="Juanma", limit=5)
         self.assertEqual(len(recent), 3)
 
+    def test_external_id_deduplication_and_lookup(self):
+        # 1. First insert
+        t1_id = self.storage.insert_incoming_transaction(
+            origen="gmail",
+            comercio="RAPPI*INTERNET",
+            monto=124900.0,
+            fecha="23/09/2026 10:15",
+            usuario="Juanma",
+            external_id="1a0ceb9e1b8a04df"
+        )
+        self.assertIsInstance(t1_id, int)
+
+        # 2. Second insert with identical external_id should reuse the ID
+        t2_id = self.storage.insert_incoming_transaction(
+            origen="gmail",
+            comercio="RAPPI*INTERNET",
+            monto=124900.0,
+            fecha="23/09/2026 10:15",
+            usuario="Juanma",
+            external_id="1a0ceb9e1b8a04df"
+        )
+        self.assertEqual(t1_id, t2_id)
+
+        # 3. get_by_external_id lookup
+        found = self.storage.get_by_external_id("1a0ceb9e1b8a04df")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["id"], t1_id)
+        self.assertEqual(found["comercio"], "RAPPI*INTERNET")
+        self.assertEqual(found["monto_total"], 124900.0)
+
+        # 4. Unknown external_id returns None
+        self.assertIsNone(self.storage.get_by_external_id("unknown_id"))
+
+    def test_cascade_external_id_resolution(self):
+        # Insert first record
+        t1_id = self.storage.insert_incoming_transaction(
+            origen="gmail",
+            comercio="CLARO",
+            monto=80000.0,
+            fecha="23/09/2026 10:00",
+            usuario="Juanma",
+            external_id="email_claro_dup"
+        )
+        self.storage.bind_telegram_message(t1_id, telegram_message_id=2001, telegram_chat_id=123)
+
+        # Manually simulate a duplicate row with same external_id but different telegram_message_id
+        with self.storage._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO transacciones_log (
+                    created_at, updated_at, origen, external_id, fecha_transaccion,
+                    comercio, monto_total, usuario, estado, telegram_message_id, telegram_chat_id
+                ) VALUES ('2026-09-23', '2026-09-23', 'gmail', 'email_claro_dup', '23/09/2026',
+                          'CLARO', 80000.0, 'Juanma', 'PENDIENTE_USUARIO', 2002, 123)
+            """)
+            conn.commit()
+
+        # Mark 2001 as synced (e.g. user clicked Guardar on message 2001)
+        ok = self.storage.mark_as_synced(2001)
+        self.assertTrue(ok)
+
+        # Check that both 2001 and duplicate 2002 cascaded to DILIGENCIADA
+        rec1 = self.storage.get_by_message_id(2001)
+        rec2 = self.storage.get_by_message_id(2002)
+        self.assertEqual(rec1["estado"], "DILIGENCIADA")
+        self.assertEqual(rec2["estado"], "DILIGENCIADA")
+
 if __name__ == "__main__":
     unittest.main()

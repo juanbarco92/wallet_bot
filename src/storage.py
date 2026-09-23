@@ -99,6 +99,9 @@ class TransactionStorage:
                 CREATE INDEX IF NOT EXISTS idx_usuario ON transacciones_log(usuario);
             """)
             conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_external_id ON transacciones_log(external_id);
+            """)
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS merchant_memory (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     merchant_pattern TEXT NOT NULL,         -- Substring o nombre limpio (ej. 'D1', 'UBER')
@@ -152,6 +155,15 @@ class TransactionStorage:
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self._connection() as conn:
             cursor = conn.cursor()
+            if external_id:
+                cursor.execute("""
+                    SELECT id, estado FROM transacciones_log WHERE external_id = ? ORDER BY id DESC LIMIT 1
+                """, (str(external_id).strip(),))
+                existing = cursor.fetchone()
+                if existing:
+                    logger.info(f"Transaction with external_id {external_id} already exists (id=#{existing['id']}, estado={existing['estado']}). Reusing.")
+                    return existing["id"]
+
             cursor.execute("""
                 INSERT INTO transacciones_log (
                     created_at, updated_at, origen, external_id, raw_text,
@@ -165,6 +177,18 @@ class TransactionStorage:
             tx_id = cursor.lastrowid
             logger.info(f"💾 Transacción #{tx_id} ({comercio}, ${monto:,.2f}) guardada en SQLite con estado INGRESADA.")
             return tx_id
+
+    def get_by_external_id(self, external_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves a transaction record by external ID (e.g. Gmail email_id or Tasker ID)."""
+        if not external_id:
+            return None
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM transacciones_log WHERE external_id = ? ORDER BY id DESC LIMIT 1
+            """, (str(external_id).strip(),))
+            row = cursor.fetchone()
+            return self._row_to_dict(row) if row else None
 
     def bind_telegram_message(
         self,
@@ -286,9 +310,23 @@ class TransactionStorage:
                         updated_at = ?
                     WHERE telegram_message_id = ?
                 """, (now_str, now_str, telegram_message_id))
+            primary_updated = cursor.rowcount > 0
+
+            # Cascade to duplicate rows sharing external_id
+            cursor.execute("""
+                SELECT external_id FROM transacciones_log WHERE (id = ? OR telegram_message_id = ?) AND external_id IS NOT NULL LIMIT 1
+            """, (tx_id or 0, telegram_message_id or 0))
+            row = cursor.fetchone()
+            if row and row["external_id"]:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'DESCARTADA', respondido_el = ?, updated_at = ?
+                    WHERE external_id = ? AND estado != 'DESCARTADA'
+                """, (now_str, now_str, row["external_id"]))
+
             conn.commit()
             logger.info(f"Transacción msg #{telegram_message_id} marcada como DESCARTADA.")
-            return cursor.rowcount > 0
+            return primary_updated
 
     def mark_as_confirmed(self, telegram_message_id: int, splits: List[Any], tx_id: Optional[int] = None) -> bool:
         """Marks the transaction as CONFIRMADA with its finalized splits details."""
@@ -340,9 +378,23 @@ class TransactionStorage:
                         updated_at = ?
                     WHERE telegram_message_id = ?
                 """, (now_str, now_str, telegram_message_id))
+            primary_updated = cursor.rowcount > 0
+
+            # Cascade to duplicate rows sharing external_id
+            cursor.execute("""
+                SELECT external_id FROM transacciones_log WHERE (id = ? OR telegram_message_id = ?) AND external_id IS NOT NULL LIMIT 1
+            """, (tx_id or 0, telegram_message_id or 0))
+            row = cursor.fetchone()
+            if row and row["external_id"]:
+                cursor.execute("""
+                    UPDATE transacciones_log
+                    SET estado = 'DILIGENCIADA', sincronizado_el = ?, updated_at = ?
+                    WHERE external_id = ? AND estado != 'DILIGENCIADA'
+                """, (now_str, now_str, row["external_id"]))
+
             conn.commit()
             logger.info(f"Transacción msg #{telegram_message_id} marcada como DILIGENCIADA en Google Sheets.")
-            return cursor.rowcount > 0
+            return primary_updated
 
     def mark_as_error(self, telegram_message_id: int, error_msg: str, tx_id: Optional[int] = None) -> bool:
         """Marks the transaction as ERROR_SHEETS recording the error description."""
