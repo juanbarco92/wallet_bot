@@ -1217,7 +1217,7 @@ class TransactionsBot:
                     await self.application.bot.delete_webhook(drop_pending_updates=False)
                 except Exception as dwe:
                     logger.warning(f"Preemptive delete_webhook check: {dwe}")
-                await self.application.updater.start_polling()
+                await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
 
                 logger.info("✅ Bot started polling successfully.")
 
