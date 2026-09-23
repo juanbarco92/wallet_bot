@@ -30,4 +30,11 @@
    - **Domains & Subscriptions:** Parser regex supports online subscriptions ending in `, el` (e.g. `en DLO*Netflix.com, el...`) and names with dots (`.com`, `S.A.S.`).
    - **Wrapping Asterisks:** Cleans prefix/suffix asterisks from extracted merchant names (`.strip("* \t\r\n")`).
    - **No More "Guardando..." Freezing:** When saving orphan/recovered transactions or manual transactions, the UI reliably transitions from `⏳ Guardando...` to `💾 Guardado Exitoso`. All `edit_message_text` calls feature plain-text fallback if Markdown V1 entities fail, and send the `"guardado"` push notification for Tasker.
+7. **Smart Quick-Save en 1 Clic (`merchant_memory` en `src/storage.py` y `src/bot.py`):**
+   - **Tabla `merchant_memory`:** Almacena frecuencias históricas particionadas por `(merchant_pattern, category_full, scope, tx_type, usuario)`.
+   - **Normalización de Comercios:** Limpia prefijos agregadores (`BOLD*`, `DLO*`, `CAC*`, `PAYU*`, etc.) y extrae destinatarios de transferencias Bancolombia (`LA LLAVE ... A <DESTINATARIO>`).
+   - **Umbral de Confianza:** Si $\text{confianza} \ge 80\%$ y ocurrencias $\ge 2$, presenta botón interactivo `[⚡ Guardar: <Categoría>]` para registrar en 1 solo toque.
+   - **Protección contra Ambigüedades:** Si el comercio tiene registros divididos o dispersos (ej. Farmatodo, Falabella), el bot no asume a ciegas y ofrece `[✏️ Cambiar / Dividir]`.
+   - **Aprendizaje Continuo:** Cada confirmación (vía 1 clic, flujo manual o `/pendientes`) actualiza y refuerza la memoria atómicamente en SQLite (`record_merchant_learning`).
+   - **Siembra:** Script `scripts/seed_merchant_memory.py` permite sembrar o resincronizar las reglas directamente desde `Base_Transacciones` en Google Sheets.
 

@@ -127,6 +127,15 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
              if not success:
                  logger.error(f"Failed to save transaction split to Sheets: {t_copy}")
                  all_saved = False
+             else:
+                 if hasattr(current_bot, 'storage') and current_bot.storage:
+                     current_bot.storage.record_merchant_learning(
+                         merchant=transaction.get("merchant", ""),
+                         category_full=category,
+                         scope=scope,
+                         tx_type=tx_type or "Gasto",
+                         usuario=user_who_paid
+                     )
         
         # 5. Mark as read only if ALL saved successfully
         if all_saved:

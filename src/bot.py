@@ -468,6 +468,14 @@ class TransactionsBot:
                 success = self.loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
                 if success:
                     saved_cats.append(category)
+                    if self.storage:
+                        self.storage.record_merchant_learning(
+                            merchant=transaction.get("merchant", "Manual"),
+                            category_full=category,
+                            scope=scope,
+                            tx_type=tx_type or "Gasto",
+                            usuario=user_who_paid
+                        )
                 else:
                     all_saved = False
             
@@ -614,6 +622,11 @@ class TransactionsBot:
         # PEND step handler (Resume/categorize from pending list)
         if step == "PEND":
             await self._handle_pending_callback(update, context, query, value)
+            return
+
+        # QUICK step handler (1-Click Smart Quick-Save)
+        if step == "QUICK":
+            await self._handle_quick_save(update, context, query, value)
             return
 
         # FLOW|BACK handler
@@ -1013,89 +1026,7 @@ class TransactionsBot:
                          future.set_result(splits)
                          del self.pending_futures[message_id]
                 else:
-                    # Bot was restarted while in confirmation screen!
-                    # pending_futures lost, save directly using self.loader if available
-                    if self.loader:
-                        try:
-                            try:
-                                await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
-                            except:
-                                pass
-
-                            state = self.flow_data.get(message_id, {})
-                            rec = self.storage.get_by_message_id(message_id) if self.storage else None
-                            merchant = state.get("merchant") or (rec["comercio"] if rec else "Desconocido")
-                            date = state.get("date") or (rec["fecha_transaccion"] if rec else datetime.now().strftime("%Y-%m-%d"))
-                            user_name = state.get("user_name") or (rec["usuario"] if rec else self._get_user_label(query.from_user.id))
-                            orig_amount = state.get("total_amount") or (rec["monto_total"] if rec else (sum(s[2] for s in splits) if splits else 0.0))
-                            
-                            logger.info(f"Directly saving orphan/recovered transaction for message {message_id}: {splits}")
-                            for cat, scope, amt, user_who_paid, tx_type in splits:
-                                t_copy = {
-                                    'amount': amt,
-                                    'merchant': merchant,
-                                    'date': date
-                                }
-                                self.loader.append_transaction(t_copy, cat, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type or "Gasto")
-                            storage_id = state.get("storage_id")
-                            if self.storage:
-                                self.storage.mark_as_synced(message_id, tx_id=storage_id)
-
-                            # Transition from Guardando... to Guardado Exitoso!
-                            clean_m = re.sub(r'\s+', ' ', str(merchant).replace('*', ' ')).strip()
-                            msg_text = (
-                                f"✅ *Guardado Exitoso* en Google Sheets\n\n"
-                                f"👤 *Usuario:* {escape_md(user_name)}\n"
-                                f"🛒 *Comercio:* {escape_md(clean_m)}\n"
-                                f"💵 *Monto:* ${orig_amount:,.2f}\n"
-                                f"📅 *Fecha:* {escape_md(date)}\n\n"
-                                f"📁 *Clasificación:*\n"
-                            )
-                            for cat, scope, amt, user_who_paid, tx_type in splits:
-                                accumulated = 0.0
-                                if self.loader:
-                                    try:
-                                        accumulated = self.loader.get_accumulated_total(cat, scope, tx_type or "Gasto", user=user_who_paid)
-                                    except Exception:
-                                        pass
-                                msg_text += f"• *{escape_md(cat)}* ({escape_md(scope)}): ${amt:,.2f}\n"
-                                if accumulated > 0:
-                                    msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
-
-                            # Check if user has more pending transactions
-                            user_filter = user_name if user_name != "User" else None
-                            remaining_pending = self.storage.get_pending_transactions(usuario=user_filter) if self.storage else []
-                            next_keyboard = None
-                            if isinstance(remaining_pending, list) and len(remaining_pending) > 0:
-                                count = len(remaining_pending)
-                                next_tx = remaining_pending[0]
-                                if isinstance(next_tx, dict):
-                                    msg_text += f"\n📌 Te quedan *{count}* transacciones pendientes:"
-                                    clean_nm = str(next_tx.get("comercio", "Desconocido")).strip("* ").replace("*", " ")
-                                    short_m = (clean_nm[:14] + "…") if len(clean_nm) > 14 else clean_nm
-                                    m_val = float(next_tx.get("monto_total", 0.0))
-                                    buttons = [
-                                        [InlineKeyboardButton(f"📝 Categorizar: {short_m} (${m_val:,.0f})", callback_data=f"PEND|SELECT_{next_tx.get('id', 0)}")],
-                                    ]
-                                    if count > 1:
-                                        buttons.append([InlineKeyboardButton("📋 Ver todas las pendientes", callback_data="PEND|LIST")])
-                                    next_keyboard = InlineKeyboardMarkup(buttons)
-
-                            try:
-                                await query.edit_message_text(text=msg_text, reply_markup=next_keyboard, parse_mode='Markdown')
-                            except Exception as edit_err:
-                                logger.warning(f"Failed to edit orphan completion with Markdown ({edit_err}), retrying plain text...")
-                                clean_text = msg_text.replace('*', '')
-                                await query.edit_message_text(text=clean_text, reply_markup=next_keyboard)
-
-                        except Exception as e:
-                            logger.error(f"Failed direct save of recovered transaction {message_id}: {e}")
-                            if self.storage:
-                                self.storage.mark_as_error(message_id, str(e))
-                            try:
-                                await query.edit_message_text(text=f"⚠️ Error al guardar: {e}")
-                            except:
-                                pass
+                    await self._save_orphan_splits(query, message_id, splits, self.flow_data.get(message_id, {}))
 
                 # Cleanup
                 if message_id in self.flow_data:
@@ -1361,14 +1292,18 @@ class TransactionsBot:
                      print("Warning: No Chat ID available.")
                      return [], None
         
-        # Step 1: Validate (Yes/No)
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
-                InlineKeyboardButton("❌ No Registrar", callback_data="VALID|No"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        # Check merchant suggestion from storage
+        suggestion = None
+        if self.storage:
+            try:
+                suggestion = self.storage.get_merchant_suggestion(
+                    merchant=transaction.get('merchant', ''),
+                    usuario=user_name
+                )
+            except Exception as e:
+                logger.warning(f"Error fetching merchant suggestion: {e}")
+
+        is_quick = bool(suggestion and suggestion.get("is_high_confidence"))
 
         # Parse Amount from transaction
         try:
@@ -1376,13 +1311,42 @@ class TransactionsBot:
         except:
             total = 0.0
 
-        text = (
-            f"💰 *Nueva Transacción Detectada* ({escape_md(user_name)})\n"
-            f"🛒 {escape_md(transaction.get('merchant'))}\n"
-            f"💵 ${total:,.2f}\n"
-            f"📅 {escape_md(transaction.get('date'))}\n\n"
-            f"¿Deseas registrarla?"
-        )
+        if is_quick:
+            cat_full = suggestion["category_full"]
+            scope_sugg = suggestion["scope"]
+            keyboard = [
+                [
+                    InlineKeyboardButton(f"⚡ Guardar: {cat_full}", callback_data="QUICK|SAVE"),
+                ],
+                [
+                    InlineKeyboardButton("✏️ Cambiar / Dividir", callback_data="VALID|Yes"),
+                    InlineKeyboardButton("❌ Descartar", callback_data="VALID|No"),
+                ]
+            ]
+            text = (
+                f"💰 *Nueva Transacción Detectada* ({escape_md(user_name)})\n"
+                f"🛒 {escape_md(transaction.get('merchant'))}\n"
+                f"💵 ${total:,.2f}\n"
+                f"📅 {escape_md(transaction.get('date'))}\n\n"
+                f"🎯 *Sugerencia:* {escape_md(cat_full)} ({escape_md(scope_sugg)})\n"
+                f"¿Deseas registrarla?"
+            )
+        else:
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                    InlineKeyboardButton("❌ No Registrar", callback_data="VALID|No"),
+                ]
+            ]
+            text = (
+                f"💰 *Nueva Transacción Detectada* ({escape_md(user_name)})\n"
+                f"🛒 {escape_md(transaction.get('merchant'))}\n"
+                f"💵 ${total:,.2f}\n"
+                f"📅 {escape_md(transaction.get('date'))}\n\n"
+                f"¿Deseas registrarla?"
+            )
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
         try:
             message = await self._retry_request(
@@ -1406,13 +1370,14 @@ class TransactionsBot:
             "total_amount": total,
             "remaining_amount": total,
             "splits": [],
-            "scope": "Personal",
+            "scope": suggestion["scope"] if is_quick else "Personal",
             "status": "INIT",
             # Store metadata for Restart context
             "merchant": transaction.get('merchant', 'Desconocido'),
             "date": transaction.get('date', '?'),
             "user_name": user_name,
-            "history": []
+            "history": [],
+            "suggestion": suggestion
         }
 
         if self.storage:
@@ -1695,6 +1660,175 @@ class TransactionsBot:
                 
         return result
 
+    async def _handle_quick_save(self, update: Update, context: ContextTypes.DEFAULT_TYPE, query, value: str):
+        """Handles 1-Click Quick-Save using the merchant memory suggestion."""
+        message_id = query.message.message_id
+
+        if message_id not in self.flow_data:
+            rec = self.storage.get_by_message_id(message_id) if self.storage else None
+            if rec:
+                flow_state = rec.get("flow_state") or {}
+                self.flow_data[message_id] = {
+                    "total_amount": flow_state.get("total_amount", rec["monto_total"]),
+                    "remaining_amount": flow_state.get("remaining_amount", rec["monto_total"]),
+                    "splits": flow_state.get("splits", []),
+                    "scope": flow_state.get("scope", "Personal"),
+                    "status": flow_state.get("status", "INIT"),
+                    "merchant": rec["comercio"],
+                    "date": rec["fecha_transaccion"],
+                    "user_name": rec["usuario"],
+                    "history": flow_state.get("history", []),
+                    "storage_id": rec.get("id"),
+                    "suggestion": flow_state.get("suggestion")
+                }
+
+        state = self.flow_data.get(message_id, {})
+        merchant = state.get("merchant", "Desconocido")
+        user_name = state.get("user_name") or self._get_user_label(query.from_user.id if query.from_user else None)
+        total = state.get("total_amount", 0.0)
+
+        suggestion = state.get("suggestion")
+        if not suggestion and self.storage:
+            suggestion = self.storage.get_merchant_suggestion(merchant, user_name)
+
+        if not suggestion:
+            try:
+                await query.answer("No se encontró sugerencia para este comercio. Usa el flujo estándar.", show_alert=True)
+            except:
+                pass
+            return
+
+        cat_full = suggestion["category_full"]
+        scope = suggestion["scope"]
+        tx_type = suggestion.get("tx_type", "Gasto")
+        pattern_to_record = suggestion.get("merchant_pattern") or merchant
+
+        splits = [(cat_full, scope, total, user_name, tx_type)]
+        state["splits"] = splits
+        state["status"] = "CONFIRMED"
+
+        if self.storage:
+            self.storage.record_merchant_learning(
+                merchant=pattern_to_record,
+                category_full=cat_full,
+                scope=scope,
+                tx_type=tx_type,
+                usuario=user_name
+            )
+            self.storage.mark_as_confirmed(message_id, splits, tx_id=state.get("storage_id"))
+
+        if message_id in self.pending_futures:
+            try:
+                await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
+            except:
+                pass
+            future = self.pending_futures[message_id]
+            if not future.done():
+                future.set_result(splits)
+                del self.pending_futures[message_id]
+            if message_id in self.flow_data:
+                del self.flow_data[message_id]
+        else:
+            await self._save_orphan_splits(query, message_id, splits, state)
+
+    async def _save_orphan_splits(self, query, message_id: int, splits: List[Tuple], state: Optional[Dict] = None):
+        """Directly saves splits when bot was restarted or future is lost (orphan recovery or /pendientes)."""
+        if not self.loader:
+            return
+
+        try:
+            try:
+                await query.edit_message_text(text="⏳ Guardando...", reply_markup=None)
+            except:
+                pass
+
+            state = state or self.flow_data.get(message_id, {})
+            rec = self.storage.get_by_message_id(message_id) if self.storage else None
+            merchant = state.get("merchant") or (rec["comercio"] if rec else "Desconocido")
+            date = state.get("date") or (rec["fecha_transaccion"] if rec else datetime.now().strftime("%Y-%m-%d"))
+            user_name = state.get("user_name") or (rec["usuario"] if rec else self._get_user_label(query.from_user.id if query.from_user else None))
+            orig_amount = state.get("total_amount") or (rec["monto_total"] if rec else (sum(s[2] for s in splits) if splits else 0.0))
+            pattern_to_record = (state.get("suggestion") or {}).get("merchant_pattern") or merchant
+
+            logger.info(f"Directly saving orphan/recovered transaction for message {message_id}: {splits}")
+            for cat, scope, amt, user_who_paid, tx_type in splits:
+                t_copy = {
+                    'amount': amt,
+                    'merchant': merchant,
+                    'date': date
+                }
+                self.loader.append_transaction(t_copy, cat, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type or "Gasto")
+                if self.storage:
+                    self.storage.record_merchant_learning(
+                        merchant=pattern_to_record,
+                        category_full=cat,
+                        scope=scope,
+                        tx_type=tx_type or "Gasto",
+                        usuario=user_who_paid
+                    )
+            storage_id = state.get("storage_id") or (rec["id"] if rec else None)
+            if self.storage:
+                self.storage.mark_as_synced(message_id, tx_id=storage_id)
+
+            clean_m = re.sub(r'\s+', ' ', str(merchant).replace('*', ' ')).strip()
+            msg_text = (
+                f"✅ *Guardado Exitoso* en Google Sheets\n\n"
+                f"👤 *Usuario:* {escape_md(user_name)}\n"
+                f"🛒 *Comercio:* {escape_md(clean_m)}\n"
+                f"💵 *Monto:* ${orig_amount:,.2f}\n"
+                f"📅 *Fecha:* {escape_md(date)}\n\n"
+                f"📁 *Clasificación:*\n"
+            )
+            for cat, scope, amt, user_who_paid, tx_type in splits:
+                accumulated = 0.0
+                if self.loader:
+                    try:
+                        res = self.loader.get_accumulated_total(cat, scope, tx_type or "Gasto", user=user_who_paid)
+                        accumulated = float(res) if isinstance(res, (int, float)) else 0.0
+                    except Exception:
+                        accumulated = 0.0
+                        pass
+                msg_text += f"• *{escape_md(cat)}* ({escape_md(scope)}): ${amt:,.2f}\n"
+                if accumulated > 0:
+                    msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
+
+            user_filter = user_name if user_name != "User" else None
+            remaining_pending = self.storage.get_pending_transactions(usuario=user_filter) if self.storage else []
+            next_keyboard = None
+            if isinstance(remaining_pending, list) and len(remaining_pending) > 0:
+                count = len(remaining_pending)
+                next_tx = remaining_pending[0]
+                if isinstance(next_tx, dict):
+                    msg_text += f"\n📌 Te quedan *{count}* transacciones pendientes:"
+                    clean_nm = str(next_tx.get("comercio", "Desconocido")).strip("* ").replace("*", " ")
+                    short_m = (clean_nm[:14] + "…") if len(clean_nm) > 14 else clean_nm
+                    m_val = float(next_tx.get("monto_total", 0.0))
+                    buttons = [
+                        [InlineKeyboardButton(f"📝 Categorizar: {short_m} (${m_val:,.0f})", callback_data=f"PEND|SELECT_{next_tx.get('id', 0)}")],
+                    ]
+                    if count > 1:
+                        buttons.append([InlineKeyboardButton("📋 Ver todas las pendientes", callback_data="PEND|LIST")])
+                    next_keyboard = InlineKeyboardMarkup(buttons)
+
+            try:
+                await query.edit_message_text(text=msg_text, reply_markup=next_keyboard, parse_mode='Markdown')
+            except Exception as edit_err:
+                logger.warning(f"Failed to edit orphan completion with Markdown ({edit_err}), retrying plain text...")
+                clean_text = msg_text.replace('*', '')
+                await query.edit_message_text(text=clean_text, reply_markup=next_keyboard)
+
+        except Exception as e:
+            logger.error(f"Failed direct save of recovered transaction {message_id}: {e}")
+            if self.storage:
+                self.storage.mark_as_error(message_id, str(e))
+            try:
+                await query.edit_message_text(text=f"⚠️ Error al guardar: {e}")
+            except:
+                pass
+        finally:
+            if message_id in self.flow_data:
+                del self.flow_data[message_id]
+
     async def _render_single_pending(self, query, tx: Dict, message_id: int, user_name: str, show_back_to_list: bool = False):
         """Renders the initial categorization alert for a single pending transaction."""
         comercio = tx.get("comercio", "Desconocido")
@@ -1703,17 +1837,27 @@ class TransactionsBot:
         fecha = tx.get("fecha_transaccion", "?")
         usuario = tx.get("usuario", user_name)
 
+        suggestion = None
+        if self.storage:
+            try:
+                suggestion = self.storage.get_merchant_suggestion(clean_merchant, usuario)
+            except Exception as e:
+                logger.warning(f"Error getting merchant suggestion in pending: {e}")
+
+        is_quick = bool(suggestion and suggestion.get("is_high_confidence"))
+
         self.flow_data[message_id] = {
             "total_amount": monto,
             "remaining_amount": monto,
             "splits": [],
-            "scope": "Personal",
+            "scope": suggestion["scope"] if is_quick else "Personal",
             "status": "INIT",
             "merchant": clean_merchant,
             "date": fecha,
             "user_name": usuario,
             "history": [],
-            "storage_id": tx["id"]
+            "storage_id": tx["id"],
+            "suggestion": suggestion
         }
 
         if self.storage:
@@ -1725,22 +1869,45 @@ class TransactionsBot:
                 self.flow_data[message_id]
             )
 
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
-                InlineKeyboardButton("❌ Descartar", callback_data="VALID|No"),
+        if is_quick:
+            cat_full = suggestion["category_full"]
+            scope_sugg = suggestion["scope"]
+            keyboard = [
+                [InlineKeyboardButton(f"⚡ Guardar: {cat_full}", callback_data="QUICK|SAVE")],
+                [
+                    InlineKeyboardButton("✏️ Cambiar / Dividir", callback_data="VALID|Yes"),
+                    InlineKeyboardButton("❌ Descartar", callback_data="VALID|No"),
+                ]
             ]
-        ]
-        if show_back_to_list:
-            keyboard.append([InlineKeyboardButton("📋 Volver a la lista", callback_data="PEND|LIST")])
+            if show_back_to_list:
+                keyboard.append([InlineKeyboardButton("📋 Volver a la lista", callback_data="PEND|LIST")])
 
-        text = (
-            f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
-            f"🛒 {escape_md(clean_merchant)}\n"
-            f"💵 ${monto:,.2f}\n"
-            f"📅 {escape_md(fecha)}\n\n"
-            f"¿Deseas registrarla?"
-        )
+            text = (
+                f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+                f"🛒 {escape_md(clean_merchant)}\n"
+                f"💵 ${monto:,.2f}\n"
+                f"📅 {escape_md(fecha)}\n\n"
+                f"🎯 *Sugerencia:* {escape_md(cat_full)} ({escape_md(scope_sugg)})\n"
+                f"¿Deseas registrarla?"
+            )
+        else:
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Registrar", callback_data="VALID|Yes"),
+                    InlineKeyboardButton("❌ Descartar", callback_data="VALID|No"),
+                ]
+            ]
+            if show_back_to_list:
+                keyboard.append([InlineKeyboardButton("📋 Volver a la lista", callback_data="PEND|LIST")])
+
+            text = (
+                f"💰 *Transacción por Categorizar* ({escape_md(usuario)})\n"
+                f"🛒 {escape_md(clean_merchant)}\n"
+                f"💵 ${monto:,.2f}\n"
+                f"📅 {escape_md(fecha)}\n\n"
+                f"¿Deseas registrarla?"
+            )
+
         try:
             await query.edit_message_text(
                 text=text,

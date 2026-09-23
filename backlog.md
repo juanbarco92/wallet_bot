@@ -4,7 +4,7 @@ Este documento reúne las iniciativas estratégicas, especificaciones funcionale
 
 ---
 
-## 📌 Iniciativa 1: Clasificación Inteligente en 1 Clic (Smart Quick-Save)
+## 📌 Iniciativa 1: Clasificación Inteligente en 1 Clic (Smart Quick-Save) [✅ IMPLEMENTADA]
 
 ### 1.1. Contexto y Problema
 Actualmente, el registro de cada gasto requiere navegar un árbol de 4 a 5 pasos en Telegram:

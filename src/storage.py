@@ -2,6 +2,7 @@ import sqlite3
 import json
 import logging
 import os
+import re
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from contextlib import contextmanager
@@ -9,6 +10,36 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 DB_PATH_DEFAULT = os.getenv("AUTOTRX_DB_PATH", "autotrx.db")
+
+def normalize_merchant(raw_name: str) -> str:
+    """
+    Cleans and normalizes merchant descriptions for reliable pattern matching:
+    - Extracts recipient from Bancolombia transfers (e.g. 'LA LLAVE ... A <DEST>')
+    - Removes suffixes like 'DESDE TU PRODUCTO *1391'
+    - Removes aggregator prefixes like 'BOLD*', 'DLO*', 'CAC*', 'PAYU*', etc.
+    - Replaces internal asterisks with spaces, strips symbols
+    - Collapses multiple spaces and converts to uppercase
+    """
+    if not raw_name:
+        return ""
+    m = str(raw_name).strip()
+    # Check Bancolombia transfer patterns
+    llave_match = re.search(r'(?:LA LLAVE|LLAVE|TRANSF(?:\.|ERENCIA)?)\s+.*?A\s+([A-Z0-9\s\.\-_]+)', m, re.IGNORECASE)
+    if llave_match:
+        m = llave_match.group(1)
+        
+    # Remove account/product suffixes
+    m = re.sub(r'\s+DESDE TU (?:CUENTA|PRODUCTO).*$', '', m, flags=re.IGNORECASE)
+    
+    # Remove aggregator prefixes
+    m = re.sub(r'^(?:BOLD|DLO|CAC|PAYU|MP|MERCADOPAGO|STRIPE)\s*\*\s*', '', m, flags=re.IGNORECASE)
+    
+    # Replace internal asterisks with spaces and strip quotes/whitespace
+    m = m.replace('*', ' ').strip("\"' \t\r\n")
+    
+    # Collapse multiple spaces
+    m = re.sub(r'\s+', ' ', m).upper()
+    return m
 
 class TransactionStorage:
     def __init__(self, db_path: str = DB_PATH_DEFAULT):
@@ -66,6 +97,22 @@ class TransactionStorage:
             """)
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_usuario ON transacciones_log(usuario);
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS merchant_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    merchant_pattern TEXT NOT NULL,         -- Substring o nombre limpio (ej. 'D1', 'UBER')
+                    category_full TEXT NOT NULL,            -- '🏠 Casa - Mercado'
+                    scope TEXT NOT NULL,                    -- 'Personal' o 'Familiar'
+                    tx_type TEXT NOT NULL,                  -- 'Gasto', 'Ingreso', 'Ahorro'
+                    usuario TEXT NOT NULL,                  -- 'Juanma' o 'Leydi'
+                    frequency INTEGER DEFAULT 1,            -- Veces clasificado así
+                    last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(merchant_pattern, category_full, scope, usuario)
+                );
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_merchant_user ON merchant_memory(merchant_pattern, usuario);
             """)
             conn.commit()
 
@@ -362,3 +409,190 @@ class TransactionStorage:
             except Exception:
                 pass
         return data
+
+    def record_merchant_learning(
+        self,
+        merchant: str,
+        category_full: str,
+        scope: str = "Familiar",
+        tx_type: str = "Gasto",
+        usuario: str = "Juanma"
+    ) -> bool:
+        """
+        Records or updates a merchant classification pattern in SQLite memory (learning loop).
+        Uses atomic UPSERT: increments frequency and updates last_used timestamp.
+        """
+        pattern = normalize_merchant(merchant)
+        if not pattern:
+            return False
+
+        norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO merchant_memory (
+                    merchant_pattern, category_full, scope, tx_type, usuario, frequency, last_used
+                ) VALUES (?, ?, ?, ?, ?, 1, ?)
+                ON CONFLICT(merchant_pattern, category_full, scope, usuario)
+                DO UPDATE SET
+                    frequency = frequency + 1,
+                    last_used = ?
+            """, (pattern, category_full, scope, tx_type or "Gasto", norm_user, now_str, now_str))
+            conn.commit()
+            logger.info(f"🧠 Aprendizaje registrado: '{pattern}' -> {category_full} [{scope}] ({norm_user})")
+            return cursor.rowcount > 0
+
+    def get_merchant_suggestion(
+        self,
+        merchant: str,
+        usuario: str,
+        min_confidence: float = 0.8,
+        min_occurrences: int = 2
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Evaluates historical classifications for a merchant pattern and user.
+        Returns high confidence suggestion if:
+          - (top_frequency / total_occurrences) >= min_confidence AND total_occurrences >= min_occurrences
+        Returns low confidence summary with top_options if pattern exists but does not meet threshold.
+        Returns None if merchant has never been seen.
+        """
+        clean_m = normalize_merchant(merchant)
+        if not clean_m:
+            return None
+
+        norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+
+        with self._connection() as conn:
+            cursor = conn.cursor()
+
+            # 1. Exact match for this specific user
+            cursor.execute("""
+                SELECT * FROM merchant_memory
+                WHERE usuario = ? AND merchant_pattern = ?
+                ORDER BY frequency DESC
+            """, (norm_user, clean_m))
+            rows = [dict(r) for r in cursor.fetchall()]
+
+            # 2. Pattern / Substring match for this user if no exact match
+            if not rows:
+                cursor.execute("""
+                    SELECT * FROM merchant_memory
+                    WHERE usuario = ?
+                    ORDER BY LENGTH(merchant_pattern) DESC
+                """, (norm_user,))
+                all_user_rows = [dict(r) for r in cursor.fetchall()]
+
+                patterns = sorted(set(r["merchant_pattern"] for r in all_user_rows), key=len, reverse=True)
+                matched_pattern = None
+                for p in patterns:
+                    p_regex = r'(?:^|\b|\s)' + re.escape(p) + r'(?:\b|\s|$)'
+                    if re.search(p_regex, clean_m, re.IGNORECASE) or (len(clean_m) >= 4 and clean_m in p):
+                        matched_pattern = p
+                        break
+
+                if matched_pattern:
+                    rows = [r for r in all_user_rows if r["merchant_pattern"] == matched_pattern]
+
+            # 3. Fallback to global consensus ONLY if this user has 0 records
+            if not rows:
+                cursor.execute("""
+                    SELECT * FROM merchant_memory
+                    WHERE merchant_pattern = ?
+                    ORDER BY frequency DESC
+                """, (clean_m,))
+                rows = [dict(r) for r in cursor.fetchall()]
+
+            if not rows:
+                return None
+
+            total_tx = sum(r["frequency"] for r in rows)
+            top = rows[0]
+            confidence = top["frequency"] / total_tx if total_tx > 0 else 0.0
+
+            is_high = (confidence >= min_confidence) and (total_tx >= min_occurrences)
+
+            return {
+                "merchant_pattern": top["merchant_pattern"],
+                "category_full": top["category_full"],
+                "scope": top["scope"],
+                "tx_type": top.get("tx_type", "Gasto"),
+                "confidence": confidence,
+                "frequency": top["frequency"],
+                "total_occurrences": total_tx,
+                "is_high_confidence": is_high,
+                "top_options": [
+                    {
+                        "category_full": r["category_full"],
+                        "scope": r["scope"],
+                        "tx_type": r.get("tx_type", "Gasto"),
+                        "frequency": r["frequency"],
+                        "percentage": (r["frequency"] / total_tx) * 100
+                    }
+                    for r in rows[:3]
+                ]
+            }
+
+    def seed_merchant_memory(self, records: List[Dict[str, Any]]) -> int:
+        """
+        Seeds multiple merchant memory records in a single atomic transaction.
+        Each dict in records should have:
+          - merchant / merchant_pattern: str
+          - category_full: str
+          - scope: str
+          - tx_type: str
+          - usuario: str
+          - frequency: int (optional, defaults to 1)
+        """
+        if not records:
+            return 0
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        inserted_count = 0
+
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            for r in records:
+                pattern = normalize_merchant(r.get("merchant_pattern") or r.get("merchant", ""))
+                if not pattern:
+                    continue
+                cat = r.get("category_full", "").strip()
+                if not cat:
+                    continue
+                scope = r.get("scope", "Familiar").strip()
+                tx_type = r.get("tx_type", "Gasto").strip()
+                u = r.get("usuario", "Juanma").strip()
+                norm_user = "Juanma" if u == "Juanma" else ("Leydi" if u in ("Leydi", "Ley") else u)
+                freq = int(r.get("frequency", 1))
+
+                cursor.execute("""
+                    INSERT INTO merchant_memory (
+                        merchant_pattern, category_full, scope, tx_type, usuario, frequency, last_used
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(merchant_pattern, category_full, scope, usuario)
+                    DO UPDATE SET
+                        frequency = frequency + excluded.frequency,
+                        last_used = excluded.last_used
+                """, (pattern, cat, scope, tx_type, norm_user, freq, now_str))
+                inserted_count += 1
+            conn.commit()
+
+        logger.info(f"🌱 Siembra completada: {inserted_count} registros procesados en merchant_memory.")
+        return inserted_count
+
+    def get_merchant_rules(self, usuario: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Returns rules from merchant_memory, optionally filtered by user."""
+        query = "SELECT * FROM merchant_memory"
+        params = []
+        if usuario:
+            norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+            query += " WHERE usuario = ?"
+            params.append(norm_user)
+        query += " ORDER BY frequency DESC, id ASC LIMIT ?"
+        params.append(limit)
+
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return [dict(r) for r in cursor.fetchall()]
