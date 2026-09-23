@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Dict, Optional, List, Tuple, Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CallbackQueryHandler, CommandHandler, MessageHandler, filters
-from telegram.error import NetworkError, TimedOut
+from telegram.error import NetworkError, TimedOut, Conflict
 import logging
 from src.config import CATEGORIES_CONFIG, RECURRING_EXPENSES
 from src.storage import TransactionStorage
@@ -74,6 +74,19 @@ class TransactionsBot:
         self.application.add_handler(CommandHandler('u', self.show_recent))
         self.application.add_handler(callback_handler)
         self.application.add_handler(message_handler)
+        self.application.add_error_handler(self.global_error_handler)
+
+    async def global_error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Global error handler that auto-heals webhook conflicts."""
+        err = context.error
+        logger.error(f"Telegram error in bot update loop: {err}")
+        if isinstance(err, Conflict) or "deleteWebhook" in str(err) or "Conflict" in str(err):
+            logger.warning("⚠️ Conflicto de Webhook detectado en Telegram. Eliminando webhook automáticamente...")
+            try:
+                await self.application.bot.delete_webhook(drop_pending_updates=False)
+                logger.info("✅ Webhook conflictivo eliminado exitosamente.")
+            except Exception as we:
+                logger.error(f"Fallo al intentar auto-eliminar webhook: {we}")
 
     async def _retry_request(self, func, *args, **kwargs):
         """Retries a Telegram API request on network failure."""
@@ -1200,6 +1213,10 @@ class TransactionsBot:
                 # These methods can fail if network is down
                 await self.application.initialize()
                 await self.application.start()
+                try:
+                    await self.application.bot.delete_webhook(drop_pending_updates=False)
+                except Exception as dwe:
+                    logger.warning(f"Preemptive delete_webhook check: {dwe}")
                 await self.application.updater.start_polling()
 
                 logger.info("✅ Bot started polling successfully.")
