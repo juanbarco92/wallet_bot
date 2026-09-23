@@ -1,6 +1,6 @@
 import gspread
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional, Any, Tuple
 from dotenv import load_dotenv
 
 from datetime import datetime, timedelta
@@ -361,8 +361,13 @@ class SheetsLoader:
                     
                     if chat_id not in recurring_map:
                         recurring_map[chat_id] = []
-                    
                     recurring_map[chat_id].append(item)
+
+                    owner_key = item["owner"]
+                    if owner_key:
+                        if owner_key not in recurring_map:
+                            recurring_map[owner_key] = []
+                        recurring_map[owner_key].append(item)
                     
                 except Exception as ex:
                     print(f"Skipping invalid recurring row: {row} - {ex}")
@@ -373,6 +378,104 @@ class SheetsLoader:
         except Exception as e:
             print(f"Error fetching recurring expenses: {e}")
             return {}
+
+    def get_recurring_expenses_for_user(self, usuario: str, chat_id: Optional[int] = None) -> List[Dict]:
+        """
+        Returns recurring expenses for a specific user, matching by owner name or chat_id fallback.
+        """
+        recurring_map = self.get_recurring_expenses()
+        norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+        
+        # Priority 1: Match by user name
+        if norm_user in recurring_map and recurring_map[norm_user]:
+            return recurring_map[norm_user]
+            
+        # Priority 2: Match by chat_id
+        if chat_id and chat_id in recurring_map and recurring_map[chat_id]:
+            return recurring_map[chat_id]
+            
+        return []
+
+    def sync_recurring_template_to_sheet(self, template: Dict[str, Any], chat_id: Optional[int] = None) -> bool:
+        """
+        Syncs a template to 'Config_Fijos' sheet.
+        Updates if exists (by Name + User), or appends if new.
+        """
+        if not self.client:
+            return False
+
+        try:
+            sh = self.sheet.spreadsheet if self.sheet else self.client.open_by_key(self.sheet_id)
+            try:
+                ws = sh.worksheet("Config_Fijos")
+            except gspread.WorksheetNotFound:
+                ws = sh.add_worksheet(title="Config_Fijos", rows=100, cols=10)
+                ws.append_row(["Chat ID", "Nombre Gasto", "Monto", "Categoría", "Scope", "Dueño (User)", "Tipo", "Es Mensual"], value_input_option='USER_ENTERED')
+
+            all_values = ws.get_all_values()
+            t_name = str(template.get("name", "")).strip().upper()
+            t_user = str(template.get("usuario", "")).strip().upper()
+            norm_user = "JUANMA" if t_user == "JUANMA" else ("LEYDI" if t_user in ("LEYDI", "LEY") else t_user)
+
+            target_row = None
+            for idx, r in enumerate(all_values[1:], start=2):
+                if len(r) >= 2:
+                    row_name = str(r[1]).strip().upper()
+                    row_user = str(r[5] if len(r) > 5 else "").strip().upper()
+                    if row_name == t_name and (not row_user or row_user == norm_user):
+                        target_row = idx
+                        break
+
+            row_data = [
+                str(chat_id or ""),
+                str(template.get("name", "")).strip(),
+                template.get("amount", 0.0),
+                str(template.get("category", "")).strip(),
+                str(template.get("scope", "Personal")).strip(),
+                str(template.get("usuario", "")).strip(),
+                str(template.get("tx_type", "Gasto")).strip(),
+                int(template.get("is_monthly", 1))
+            ]
+
+            if target_row:
+                ws.update(range_name=f"A{target_row}:H{target_row}", values=[row_data], value_input_option='USER_ENTERED')
+                print(f"Updated template '{t_name}' in row {target_row} of Config_Fijos")
+            else:
+                ws.append_row(row_data, value_input_option='USER_ENTERED')
+                print(f"Appended new template '{t_name}' to Config_Fijos")
+
+            return True
+        except Exception as e:
+            print(f"Error syncing template to sheet: {e}")
+            return False
+
+    def delete_recurring_template_from_sheet(self, name: str, usuario: str) -> bool:
+        """
+        Deletes a template row from 'Config_Fijos' by name and user.
+        """
+        if not self.client:
+            return False
+
+        try:
+            sh = self.sheet.spreadsheet if self.sheet else self.client.open_by_key(self.sheet_id)
+            ws = sh.worksheet("Config_Fijos")
+            all_values = ws.get_all_values()
+            t_name = str(name).strip().upper()
+            t_user = str(usuario).strip().upper()
+            norm_user = "JUANMA" if t_user == "JUANMA" else ("LEYDI" if t_user in ("LEYDI", "LEY") else t_user)
+
+            for idx, r in enumerate(all_values[1:], start=2):
+                if len(r) >= 2:
+                    row_name = str(r[1]).strip().upper()
+                    row_user = str(r[5] if len(r) > 5 else "").strip().upper()
+                    if row_name == t_name and (not row_user or row_user == norm_user):
+                        ws.delete_rows(idx)
+                        print(f"Deleted row {idx} for template '{name}' in Config_Fijos")
+                        return True
+            return False
+        except Exception as e:
+            print(f"Error deleting template from sheet: {e}")
+            return False
 
 if __name__ == "__main__":
     # Test

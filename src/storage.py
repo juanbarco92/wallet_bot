@@ -114,6 +114,24 @@ class TransactionStorage:
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_merchant_user ON merchant_memory(merchant_pattern, usuario);
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS recurring_templates (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    amount REAL DEFAULT 0.0,
+                    category TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    tx_type TEXT DEFAULT 'Gasto',
+                    usuario TEXT NOT NULL,
+                    is_monthly INTEGER DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(name, usuario)
+                );
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_templates_user ON recurring_templates(usuario);
+            """)
             conn.commit()
 
     def insert_incoming_transaction(
@@ -596,3 +614,83 @@ class TransactionStorage:
             cursor = conn.cursor()
             cursor.execute(query, params)
             return [dict(r) for r in cursor.fetchall()]
+
+    def save_recurring_template(
+        self,
+        name: str,
+        amount: float,
+        category: str,
+        scope: str,
+        usuario: str,
+        tx_type: str = "Gasto",
+        is_monthly: int = 1
+    ) -> int:
+        """
+        Saves or updates a recurring/frequent transaction template.
+        Uses SQLite UPSERT to avoid duplicates per (name, usuario).
+        """
+        norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+        with self._connection() as conn:
+            cursor = conn.execute("""
+                INSERT INTO recurring_templates (
+                    name, amount, category, scope, tx_type, usuario, is_monthly, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(name, usuario) DO UPDATE SET
+                    amount = excluded.amount,
+                    category = excluded.category,
+                    scope = excluded.scope,
+                    tx_type = excluded.tx_type,
+                    is_monthly = excluded.is_monthly,
+                    updated_at = CURRENT_TIMESTAMP;
+            """, (name.strip(), float(amount), category.strip(), scope.strip(), tx_type.strip(), norm_user.strip(), int(is_monthly)))
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_recurring_templates(
+        self,
+        usuario: Optional[str] = None,
+        only_monthly: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        Returns recurring templates, optionally filtered by user and/or is_monthly flag.
+        """
+        query = "SELECT * FROM recurring_templates WHERE 1=1"
+        params = []
+        if usuario:
+            norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+            query += " AND usuario = ?"
+            params.append(norm_user)
+        if only_monthly:
+            query += " AND is_monthly = 1"
+        query += " ORDER BY name ASC"
+
+        with self._connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return [dict(r) for r in cursor.fetchall()]
+
+    def delete_recurring_template(self, name: str, usuario: str) -> bool:
+        """
+        Deletes a recurring template by name and user.
+        """
+        norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+        with self._connection() as conn:
+            cursor = conn.execute(
+                "DELETE FROM recurring_templates WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND usuario = ?",
+                (name.strip(), norm_user)
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_recurring_template(self, name: str, usuario: str) -> Optional[Dict[str, Any]]:
+        """
+        Gets a single template by name and user.
+        """
+        norm_user = "Juanma" if usuario == "Juanma" else ("Leydi" if usuario in ("Leydi", "Ley") else usuario)
+        with self._connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM recurring_templates WHERE UPPER(TRIM(name)) = UPPER(TRIM(?)) AND usuario = ?",
+                (name.strip(), norm_user)
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None

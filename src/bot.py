@@ -42,6 +42,8 @@ class TransactionsBot:
         self.flow_data: Dict[str, Dict] = {} 
         self.manual_sessions: Dict[int, Dict] = {} 
         self.recurring_sessions: Dict[int, Dict] = {} # {chat_id: {queue: [], index: 0}}
+        self.fav_amount_sessions: Dict[int, Dict] = {} # {user_id: {"name": ..., "user_name": ...}}
+        self.template_sessions: Dict[int, Dict] = {} # {user_id: {"step": ..., "data": ...}}
         self.chat_id: Optional[int] = None
         
         # Build immediately
@@ -69,6 +71,14 @@ class TransactionsBot:
         self.application.add_handler(manual_handler)
         self.application.add_handler(CommandHandler('m', self.start_manual_flow)) # Shortcut
         self.application.add_handler(CommandHandler('fijos', self.start_recurring_flow)) # Recurring
+        self.application.add_handler(CommandHandler('frecuentes', self.start_frecuentes_flow))
+        self.application.add_handler(CommandHandler('f', self.start_frecuentes_flow))
+        self.application.add_handler(CommandHandler('fav', self.start_frecuentes_flow))
+        self.application.add_handler(CommandHandler('nuevo_frecuente', self.start_nuevo_template_flow))
+        self.application.add_handler(CommandHandler('nuevo_fijo', self.start_nuevo_template_flow))
+        self.application.add_handler(CommandHandler('nf', self.start_nuevo_template_flow))
+        self.application.add_handler(CommandHandler('borrar_frecuente', self.start_borrar_template_flow))
+        self.application.add_handler(CommandHandler('bf', self.start_borrar_template_flow))
         self.application.add_handler(CommandHandler('pendientes', self.show_pending))
         self.application.add_handler(CommandHandler('p', self.show_pending))
         self.application.add_handler(CommandHandler('ultimas', self.show_recent))
@@ -167,26 +177,54 @@ class TransactionsBot:
         
         await update.message.reply_text("📝 *Nueva Transacción Manual*\n\nPor favor ingresa el *Monto* de la transacción:\n(Ej: 50000)", parse_mode='Markdown')
     async def start_recurring_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Starts the flow to confirm recurring expenses."""
-        user_id = update.effective_user.id
-        self.chat_id = update.effective_chat.id # Ensure we grab chat_id locally
+        """Starts the flow to confirm recurring expenses (monthly review)."""
+        user_id = update.effective_user.id if update.effective_user else None
+        self.chat_id = update.effective_chat.id if update.effective_chat else self.chat_id
+        user_name = self._get_user_label(user_id)
         
-        # Load from Sheet if Loader available
         queue = []
-        if self.loader:
-            # We want expenses for this Chat ID
-            recurring_map = self.loader.get_recurring_expenses()
-            queue = recurring_map.get(self.chat_id, [])
-        else:
-            # Fallback to config (Legacy) or empty
-            queue = RECURRING_EXPENSES.get(self.chat_id, [])
+        if self.storage:
+            templates = self.storage.get_recurring_templates(usuario=user_name, only_monthly=True)
+            if templates:
+                queue = [
+                    {
+                        "name": t["name"],
+                        "amount": t["amount"],
+                        "category": t["category"],
+                        "scope": t["scope"],
+                        "owner": t["usuario"],
+                        "tx_type": t.get("tx_type", "Gasto")
+                    }
+                    for t in templates
+                ]
+
+        if not queue and self.loader:
+            sheet_items = self.loader.get_recurring_expenses_for_user(usuario=user_name, chat_id=self.chat_id)
+            if sheet_items:
+                queue = sheet_items
+                if self.storage:
+                    for it in sheet_items:
+                        self.storage.save_recurring_template(
+                            name=it["name"],
+                            amount=it["amount"],
+                            category=it["category"],
+                            scope=it["scope"],
+                            usuario=user_name,
+                            tx_type=it.get("tx_type", "Gasto"),
+                            is_monthly=1
+                        )
 
         if not queue:
-            await self._retry_request(update.message.reply_text, "⚠️ No tienes gastos fijos configurados en la hoja 'Config_Fijos'.\nUsa /nuevo_fijo para agregar uno.")
+            await self._retry_request(
+                update.message.reply_text,
+                f"⚠️ No tienes gastos fijos mensuales configurados para {escape_md(user_name)}.\n\n"
+                f"Usa `/nuevo_fijo` o `/nuevo_frecuente` para crear uno.",
+                parse_mode='Markdown'
+            )
             return
 
         self.recurring_sessions[user_id] = {
-            "queue": [item.copy() for item in queue], # Deep copy to allow specific edits
+            "queue": [item.copy() for item in queue],
             "index": 0,
             "status": "RECURRING_REVIEW",
             "saved_count": 0
@@ -200,13 +238,12 @@ class TransactionsBot:
         queue = session["queue"]
         
         if idx >= len(queue):
-            # Done
             saved = session.get("saved_count", 0)
             del self.recurring_sessions[user_id]
             await self._retry_request(
                 context.bot.send_message if update.callback_query else update.message.reply_text,
                 chat_id=self.chat_id,
-                text=f"✅ *Proceso Finalizado*\nSe registraron {saved} gastos fijos.",
+                text=f"✅ *Proceso Finalizado*\nSe registraron {saved} gastos fijos mensuales.",
                 parse_mode='Markdown'
             )
             return
@@ -216,7 +253,7 @@ class TransactionsBot:
             f"📅 *Gasto Fijo {idx + 1}/{len(queue)}*\n"
             f"🏷️ {escape_md(item['name'])}\n"
             f"💵 ${item['amount']:,.2f}\n"
-            f"📁 {escape_md(item['category'])}\n\n"
+            f"📁 {escape_md(item['category'])} ({escape_md(item['scope'])})\n\n"
             f"¿Registrar?"
         )
         
@@ -231,57 +268,706 @@ class TransactionsBot:
             ]
         ]
         
-        # Send new message or edit
         if update.callback_query:
             await update.callback_query.edit_message_text(text=msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
         else:
-             await self._retry_request(update.message.reply_text, text=msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+            await self._retry_request(update.message.reply_text, text=msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
 
     async def _process_recurring_item_save(self, update, context, user_id):
         session = self.recurring_sessions[user_id]
         idx = session["index"]
         item = session["queue"][idx]
+        user_name = item.get("owner") or self._get_user_label(user_id)
+        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
         
+        saved = False
         if self.loader:
-            # Construct transaction dict
-            from datetime import datetime
             t_data = {
-                "date": datetime.now().strftime("%d/%m/%Y %H:%M"), # Loader will adjust to COL time
+                "date": now_str,
                 "amount": item["amount"],
-                "merchant": item["name"] # Description
+                "merchant": item["name"]
             }
-            
-            success = self.loader.append_transaction(
+            saved = self.loader.append_transaction(
                 t_data, 
                 category=item["category"], 
                 scope=item["scope"], 
-                user_who_paid=item["owner"], 
-                transaction_type="Gasto" # Assume fixed are expenses? Or check category/pocket logic? Defaults to Gasto.
+                user_who_paid=user_name, 
+                transaction_type=item.get("tx_type", "Gasto")
             )
-            
-            if success:
-                session["saved_count"] += 1
-            else:
-                await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text=f"⚠️ Error guardando {item['name']}")
+        else:
+            saved = True
+
+        if saved:
+            session["saved_count"] += 1
+            if self.storage:
+                tx_id = self.storage.insert_incoming_transaction(
+                    origen="fijos_mensual",
+                    comercio=item["name"],
+                    monto=item["amount"],
+                    fecha=now_str,
+                    usuario=user_name,
+                    raw_text=f"Gasto Fijo: {item['name']}"
+                )
+                self.storage.mark_as_synced(0, tx_id=tx_id)
+                self.storage.record_merchant_learning(
+                    merchant=item["name"],
+                    category_full=item["category"],
+                    scope=item["scope"],
+                    tx_type=item.get("tx_type", "Gasto"),
+                    usuario=user_name
+                )
+        else:
+            await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text=f"⚠️ Error guardando {item['name']}")
         
-        # Move next
         session["index"] += 1
         self.recurring_sessions[user_id] = session
         await self._show_next_recurring_item(update, context, user_id)
 
+    # --- Frequent Templates (/frecuentes, /fav, /f) ---
+    async def start_frecuentes_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Displays frequent/favorite transaction templates as interactive buttons."""
+        user_id = update.effective_user.id if update.effective_user else None
+        user_name = self._get_user_label(user_id)
+        chat_id = update.effective_chat.id if update.effective_chat else self.chat_id
+        self.chat_id = chat_id
+
+        # Direct argument matching (e.g. /frecuentes Arriendo)
+        if context.args:
+            query_name = " ".join(context.args).strip()
+            template = self.storage.get_recurring_template(query_name, user_name) if self.storage else None
+            if template:
+                await self._render_template_confirmation(update, context, template, user_name)
+                return
+
+        templates = self.storage.get_recurring_templates(usuario=user_name) if self.storage else []
+        
+        # If storage empty, seed from Sheets if available
+        if not templates and self.loader:
+            sheet_items = self.loader.get_recurring_expenses_for_user(usuario=user_name, chat_id=chat_id)
+            if sheet_items:
+                if self.storage:
+                    for it in sheet_items:
+                        self.storage.save_recurring_template(
+                            name=it["name"],
+                            amount=it["amount"],
+                            category=it["category"],
+                            scope=it["scope"],
+                            usuario=user_name,
+                            tx_type=it.get("tx_type", "Gasto"),
+                            is_monthly=1
+                        )
+                    templates = self.storage.get_recurring_templates(usuario=user_name)
+
+        if not templates:
+            keyboard = [
+                [InlineKeyboardButton("➕ Crear Nueva Plantilla", callback_data="FAV|NEW")]
+            ]
+            msg = (
+                f"⭐ *Transacciones Frecuentes* ({escape_md(user_name)})\n\n"
+                f"No tienes plantillas guardadas aún.\n"
+                f"Crea una para registrar pagos repetitivos (ej: Arriendo, Servicios, Mercado Plaza) en 1 toque."
+            )
+            await self._retry_request(
+                update.message.reply_text,
+                msg,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            return
+
+        keyboard = []
+        for t in templates:
+            name = t["name"]
+            amt = t.get("amount", 0.0)
+            amt_str = f" (${amt:,.0f})" if amt > 0 else ""
+            short_name = (name[:16] + "…") if len(name) > 16 else name
+            keyboard.append([InlineKeyboardButton(f"📌 {short_name}{amt_str}", callback_data=f"FAV|SEL_{name}")])
+
+        keyboard.append([
+            InlineKeyboardButton("➕ Nueva", callback_data="FAV|NEW"),
+            InlineKeyboardButton("🗑️ Eliminar", callback_data="FAV|MANAGE")
+        ])
+
+        msg = (
+            f"⭐ *Transacciones Frecuentes* ({escape_md(user_name)})\n"
+            f"Selecciona una para registrarla rápidamente:"
+        )
+        await self._retry_request(
+            update.message.reply_text,
+            msg,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+
+    async def _render_template_confirmation(self, update, context, template: Dict[str, Any], user_name: str, query=None):
+        """Displays options for a specific template."""
+        name = template["name"]
+        amt = template.get("amount", 0.0)
+        cat = template.get("category", "")
+        scope = template.get("scope", "Personal")
+        tx_type = template.get("tx_type", "Gasto")
+
+        keyboard = []
+        if amt > 0:
+            keyboard.append([InlineKeyboardButton(f"⚡ Guardar: ${amt:,.0f}", callback_data=f"FAV|SAVE_{name}")])
+        keyboard.append([InlineKeyboardButton("✏️ Otro Monto", callback_data=f"FAV|EDIT_{name}")])
+        keyboard.append([
+            InlineKeyboardButton("🔙 Volver", callback_data="FAV|LIST"),
+            InlineKeyboardButton("❌ Cancelar", callback_data="FAV|CANCEL")
+        ])
+
+        text = (
+            f"⭐ *Plantilla:* *{escape_md(name)}*\n"
+            f"👤 *Usuario:* {escape_md(user_name)}\n"
+            f"📁 *Categoría:* {escape_md(cat)} ({escape_md(scope)}) [{escape_md(tx_type)}]\n"
+            f"💵 *Monto Sugerido:* ${amt:,.2f}\n\n"
+            f"¿Deseas registrarla con este valor o ingresar otro monto?"
+        )
+
+        if query:
+            await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+        else:
+            await self._retry_request(update.message.reply_text, text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+
+    async def start_nuevo_template_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Starts the wizard to create a new frequent/recurring template."""
+        user_id = update.effective_user.id if update.effective_user else None
+        user_name = self._get_user_label(user_id)
+        chat_id = update.effective_chat.id if update.effective_chat else self.chat_id
+        self.chat_id = chat_id
+
+        self.template_sessions[user_id] = {
+            "step": "WAITING_NAME",
+            "data": {"usuario": user_name},
+            "chat_id": chat_id
+        }
+
+        if context.args:
+            args = list(context.args)
+            last_arg = args[-1]
+            amount = None
+            try:
+                amt_str = last_arg.replace(',', '').replace('$', '').strip()
+                if amt_str.lower().endswith('k'):
+                    amount = float(amt_str.lower().replace('k', '')) * 1000
+                else:
+                    amount = float(amt_str)
+                name = " ".join(args[:-1]).strip()
+            except ValueError:
+                name = " ".join(args).strip()
+                amount = 0.0
+
+            if name:
+                self.template_sessions[user_id]["data"]["name"] = name
+                self.template_sessions[user_id]["data"]["amount"] = amount
+                self.template_sessions[user_id]["step"] = "WAITING_SCOPE"
+                keyboard = [
+                    [
+                        InlineKeyboardButton("🏠 Familiar", callback_data="TEMPL|SCOPE_Familiar"),
+                        InlineKeyboardButton("👤 Personal", callback_data="TEMPL|SCOPE_Personal"),
+                    ],
+                    [
+                        InlineKeyboardButton("❌ Cancelar", callback_data="TEMPL|CANCEL")
+                    ]
+                ]
+                await self._retry_request(
+                    update.message.reply_text,
+                    f"📝 *Nueva Plantilla:* *{escape_md(name)}*\n"
+                    f"💵 Monto: ${amount:,.2f}\n\n"
+                    f"¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+                return
+
+        await self._retry_request(
+            update.message.reply_text,
+            "📝 *Nueva Plantilla Frecuente / Fija*\n\n"
+            "Por favor ingresa el *Nombre* de la plantilla (ej: Arriendo, Servicios EPM, Netflix, Mercado Plaza):",
+            parse_mode='Markdown'
+        )
+
+    async def start_borrar_template_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Displays options to delete a frequent template."""
+        user_id = update.effective_user.id if update.effective_user else None
+        user_name = self._get_user_label(user_id)
+        templates = self.storage.get_recurring_templates(usuario=user_name) if self.storage else []
+        if not templates:
+            await self._retry_request(update.message.reply_text, "ℹ️ No tienes plantillas para eliminar.")
+            return
+
+        keyboard = []
+        for t in templates:
+            keyboard.append([InlineKeyboardButton(f"🗑️ {t['name']}", callback_data=f"FAV|DEL_{t['name']}")])
+        keyboard.append([InlineKeyboardButton("❌ Cancelar", callback_data="FAV|CANCEL")])
+
+        await self._retry_request(
+            update.message.reply_text,
+            "🗑️ *Eliminar Plantilla*\nSelecciona la plantilla que deseas borrar:",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+
+    async def _handle_fav_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE, query, value: str):
+        """Handles callbacks for frequent templates (/frecuentes)."""
+        user_id = query.from_user.id if query.from_user else None
+        user_name = self._get_user_label(user_id)
+
+        if value == "LIST" or value == "SHOW":
+            templates = self.storage.get_recurring_templates(usuario=user_name) if self.storage else []
+            if not templates:
+                await query.edit_message_text(
+                    "ℹ️ No tienes plantillas guardadas. Usa /nuevo_frecuente para agregar una."
+                )
+                return
+            keyboard = []
+            for t in templates:
+                name = t["name"]
+                amt = t.get("amount", 0.0)
+                amt_str = f" (${amt:,.0f})" if amt > 0 else ""
+                short_name = (name[:16] + "…") if len(name) > 16 else name
+                keyboard.append([InlineKeyboardButton(f"📌 {short_name}{amt_str}", callback_data=f"FAV|SEL_{name}")])
+            keyboard.append([
+                InlineKeyboardButton("➕ Nueva", callback_data="FAV|NEW"),
+                InlineKeyboardButton("🗑️ Eliminar", callback_data="FAV|MANAGE")
+            ])
+            msg = (
+                f"⭐ *Transacciones Frecuentes* ({escape_md(user_name)})\n"
+                f"Selecciona una para registrarla rápidamente:"
+            )
+            await query.edit_message_text(text=msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+            return
+
+        elif value.startswith("SEL_"):
+            name = value.replace("SEL_", "", 1).strip()
+            template = self.storage.get_recurring_template(name, user_name) if self.storage else None
+            if not template:
+                await query.answer("Plantilla no encontrada.")
+                return
+            await self._render_template_confirmation(update, context, template, user_name, query=query)
+
+        elif value.startswith("SAVE_"):
+            name = value.replace("SAVE_", "", 1).strip()
+            template = self.storage.get_recurring_template(name, user_name) if self.storage else None
+            if not template:
+                await query.answer("Plantilla no encontrada.")
+                return
+            await self._save_template_transaction(
+                query=query,
+                template=template,
+                amount=template["amount"],
+                user_name=user_name
+            )
+
+        elif value.startswith("EDIT_"):
+            name = value.replace("EDIT_", "", 1).strip()
+            self.fav_amount_sessions[user_id] = {
+                "name": name,
+                "user_name": user_name,
+                "message_id": query.message.message_id
+            }
+            await query.edit_message_text(
+                text=f"✏️ Ingresa el nuevo monto para *{escape_md(name)}*:\n(Ej: 45000 o 45k)",
+                parse_mode='Markdown'
+            )
+
+        elif value == "NEW":
+            self.template_sessions[user_id] = {
+                "step": "WAITING_NAME",
+                "data": {"usuario": user_name},
+                "chat_id": query.message.chat_id
+            }
+            await query.edit_message_text(
+                text="📝 *Nueva Plantilla Frecuente*\n\nIngresa el *Nombre* de la plantilla (ej: Arriendo, Netflix, Servicios EPM):",
+                parse_mode='Markdown'
+            )
+
+        elif value == "MANAGE":
+            templates = self.storage.get_recurring_templates(usuario=user_name) if self.storage else []
+            keyboard = []
+            for t in templates:
+                keyboard.append([InlineKeyboardButton(f"🗑️ {t['name']}", callback_data=f"FAV|DEL_{t['name']}")])
+            keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="FAV|LIST")])
+            await query.edit_message_text(
+                text="🗑️ *Eliminar Plantilla*\nSelecciona la plantilla que deseas borrar:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+
+        elif value.startswith("DEL_"):
+            name = value.replace("DEL_", "", 1).strip()
+            if self.storage:
+                self.storage.delete_recurring_template(name, user_name)
+            if self.loader:
+                self.loader.delete_recurring_template_from_sheet(name, user_name)
+            keyboard = [[InlineKeyboardButton("📋 Volver a la lista", callback_data="FAV|LIST")]]
+            await query.edit_message_text(
+                text=f"🗑️ Plantilla *{escape_md(name)}* eliminada exitosamente.",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+
+        elif value == "CANCEL":
+            if user_id in self.fav_amount_sessions:
+                del self.fav_amount_sessions[user_id]
+            await query.edit_message_text(text="❌ Operación cancelada.")
+
+    async def _handle_templ_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE, query, value: str):
+        """Handles callbacks for template wizard creation (/nuevo_frecuente)."""
+        user_id = query.from_user.id if query.from_user else None
+        user_name = self._get_user_label(user_id)
+
+        if user_id not in self.template_sessions:
+            await query.edit_message_text("⚠️ Sesión de plantilla expirada. Usa /nuevo_frecuente de nuevo.")
+            return
+
+        session = self.template_sessions[user_id]
+
+        if value == "CANCEL":
+            del self.template_sessions[user_id]
+            await query.edit_message_text("❌ Creación de plantilla cancelada.")
+            return
+
+        if value.startswith("SCOPE_"):
+            scope = value.replace("SCOPE_", "", 1)
+            session["data"]["scope"] = scope
+            session["step"] = "WAITING_CAT"
+
+            categories = CATEGORIES_CONFIG.get(scope, {})
+            keyboard = []
+            row = []
+            for cat in categories.keys():
+                row.append(InlineKeyboardButton(cat, callback_data=f"TEMPL|CAT_{cat}"))
+                if len(row) == 2:
+                    keyboard.append(row)
+                    row = []
+            if row:
+                keyboard.append(row)
+            keyboard.append([InlineKeyboardButton("❌ Cancelar", callback_data="TEMPL|CANCEL")])
+
+            await query.edit_message_text(
+                text=f"Ámbito: *{escape_md(scope)}*\n\n📁 Selecciona la Categoría:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            return
+
+        elif value.startswith("CAT_"):
+            cat = value.replace("CAT_", "", 1)
+            session["data"]["category_main"] = cat
+            session["step"] = "WAITING_SUBCAT"
+            scope = session["data"].get("scope", "Personal")
+
+            subcats = CATEGORIES_CONFIG.get(scope, {}).get(cat, [])
+            keyboard = []
+            row = []
+            for sub in subcats:
+                row.append(InlineKeyboardButton(sub, callback_data=f"TEMPL|SUBCAT_{sub}"))
+                if len(row) == 2:
+                    keyboard.append(row)
+                    row = []
+            if row:
+                keyboard.append(row)
+            keyboard.append([InlineKeyboardButton("❌ Cancelar", callback_data="TEMPL|CANCEL")])
+
+            await query.edit_message_text(
+                text=f"Categoría: *{escape_md(cat)}*\n\n📂 Selecciona la Subcategoría:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            return
+
+        elif value.startswith("SUBCAT_"):
+            sub = value.replace("SUBCAT_", "", 1)
+            cat_main = session["data"].get("category_main", "")
+            cat_full = f"{cat_main} - {sub}" if cat_main and sub != cat_main else (sub or cat_main)
+            session["data"]["category"] = cat_full
+            session["step"] = "WAITING_MONTHLY"
+
+            keyboard = [
+                [
+                    InlineKeyboardButton("📅 Sí, mensual (/fijos)", callback_data="TEMPL|MONTHLY_1"),
+                    InlineKeyboardButton("⚡ Solo frecuente (/frecuentes)", callback_data="TEMPL|MONTHLY_0"),
+                ],
+                [
+                    InlineKeyboardButton("❌ Cancelar", callback_data="TEMPL|CANCEL")
+                ]
+            ]
+            await query.edit_message_text(
+                text=(
+                    f"📁 Categoría: *{escape_md(cat_full)}*\n\n"
+                    f"📅 ¿Deseas incluirlo en la revisión de gastos fijos mensuales (`/fijos`)?"
+                ),
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+            return
+
+        elif value.startswith("MONTHLY_"):
+            is_monthly = int(value.replace("MONTHLY_", "", 1))
+            session["data"]["is_monthly"] = is_monthly
+            
+            data = session["data"]
+            name = data["name"]
+            amount = float(data.get("amount", 0.0))
+            category = data["category"]
+            scope = data.get("scope", "Personal")
+            tx_type = data.get("tx_type", "Gasto")
+
+            # Save in SQLite
+            if self.storage:
+                self.storage.save_recurring_template(
+                    name=name,
+                    amount=amount,
+                    category=category,
+                    scope=scope,
+                    usuario=user_name,
+                    tx_type=tx_type,
+                    is_monthly=is_monthly
+                )
+
+            # Sync in Google Sheets
+            if self.loader:
+                try:
+                    self.loader.sync_recurring_template_to_sheet(
+                        {
+                            "name": name,
+                            "amount": amount,
+                            "category": category,
+                            "scope": scope,
+                            "usuario": user_name,
+                            "tx_type": tx_type,
+                            "is_monthly": is_monthly
+                        },
+                        chat_id=session.get("chat_id")
+                    )
+                except Exception as e:
+                    logger.error(f"Error syncing template to sheet: {e}")
+
+            del self.template_sessions[user_id]
+
+            tipo_desc = "📅 Gasto Fijo Mensual (/fijos y /frecuentes)" if is_monthly else "⚡ Acceso Rápido (/frecuentes)"
+            text = (
+                f"✅ *Plantilla Creada Exitosamente*\n\n"
+                f"🏷️ *Nombre:* {escape_md(name)}\n"
+                f"💵 *Monto Sugerido:* ${amount:,.2f}\n"
+                f"📁 *Categoría:* {escape_md(category)} ({escape_md(scope)})\n"
+                f"📌 *Modo:* {tipo_desc}\n\n"
+                f"¡Ya puedes usarla con `/frecuentes`!"
+            )
+            keyboard = [[InlineKeyboardButton("⭐ Ver Frecuentes", callback_data="FAV|LIST")]]
+            await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+
+    async def _save_template_transaction(
+        self,
+        query,
+        template: Dict[str, Any],
+        amount: float,
+        user_name: str,
+        target_message_id: Optional[int] = None,
+        chat_id: Optional[int] = None
+    ):
+        """Saves a frequent transaction from template to Sheets & SQLite with feedback."""
+        t_name = template["name"]
+        cat_full = template["category"]
+        scope = template.get("scope", "Personal")
+        tx_type = template.get("tx_type", "Gasto")
+        now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+        eff_chat_id = chat_id or (query.message.chat_id if query else self.chat_id)
+
+        # 1. Google Sheets
+        success = False
+        if self.loader:
+            t_data = {
+                "date": now_str,
+                "amount": amount,
+                "merchant": t_name
+            }
+            success = self.loader.append_transaction(
+                t_data,
+                category=cat_full,
+                scope=scope,
+                user_who_paid=user_name,
+                transaction_type=tx_type
+            )
+        else:
+            success = True
+
+        if not success:
+            err_msg = f"⚠️ Error al guardar la transacción de '{t_name}' en Google Sheets."
+            if query:
+                await query.edit_message_text(text=err_msg)
+            else:
+                await self._retry_request(self.application.bot.send_message, chat_id=eff_chat_id, text=err_msg)
+            return
+
+        # 2. SQLite Tracking & Learning
+        if self.storage:
+            tx_id = self.storage.insert_incoming_transaction(
+                origen="frecuente_manual",
+                comercio=t_name,
+                monto=amount,
+                fecha=now_str,
+                usuario=user_name,
+                raw_text=f"Plantilla Frecuente: {t_name}"
+            )
+            self.storage.mark_as_synced(0, tx_id=tx_id)
+            self.storage.record_merchant_learning(
+                merchant=t_name,
+                category_full=cat_full,
+                scope=scope,
+                tx_type=tx_type,
+                usuario=user_name
+            )
+
+        # 3. Calculate accumulation
+        accumulated = 0.0
+        if self.loader:
+            try:
+                res = self.loader.get_accumulated_total(cat_full, scope, tx_type, user=user_name)
+                accumulated = float(res) if isinstance(res, (int, float)) else 0.0
+            except Exception:
+                accumulated = 0.0
+
+        clean_m = re.sub(r'\s+', ' ', str(t_name).replace('*', ' ')).strip()
+        msg_text = (
+            f"✅ *Guardado Exitoso* en Google Sheets\n\n"
+            f"👤 *Usuario:* {escape_md(user_name)}\n"
+            f"🛒 *Comercio:* {escape_md(clean_m)}\n"
+            f"💵 *Monto:* ${amount:,.2f}\n"
+            f"📅 *Fecha:* {escape_md(now_str)}\n\n"
+            f"📁 *Clasificación:*\n"
+            f"• *{escape_md(cat_full)}* ({escape_md(scope)}): ${amount:,.2f}\n"
+        )
+        if accumulated > 0:
+            msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
+
+        if query:
+            try:
+                await query.edit_message_text(text=msg_text, parse_mode='Markdown')
+            except Exception:
+                await query.edit_message_text(text=msg_text.replace('*', ''))
+        elif target_message_id:
+            try:
+                await self.application.bot.edit_message_text(
+                    chat_id=eff_chat_id,
+                    message_id=target_message_id,
+                    text=msg_text,
+                    parse_mode='Markdown'
+                )
+            except Exception:
+                await self._retry_request(self.application.bot.send_message, chat_id=eff_chat_id, text=msg_text, parse_mode='Markdown')
+        else:
+            await self._retry_request(self.application.bot.send_message, chat_id=eff_chat_id, text=msg_text, parse_mode='Markdown')
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle text messages (for manual flow or split flow)."""
+        """Handle text messages (for manual flow, recurring flow, frequent templates, or split flow)."""
         if not update.message:
             return
 
         user_id = update.effective_user.id
-        
-        # --- 1. Check for Manual Session ---
+        user_name = self._get_user_label(user_id)
+
+        # --- 1. Check for Recurring Session Waiting Amount ---
+        if user_id in self.recurring_sessions:
+            r_session = self.recurring_sessions[user_id]
+            if r_session.get("status") == "RECURRING_WAITING_AMOUNT":
+                try:
+                    text = update.message.text.replace(',', '').replace('$', '').strip()
+                    if text.lower().endswith('k'):
+                        amount = float(text.lower().replace('k', '')) * 1000
+                    else:
+                        amount = float(text)
+                    current_idx = r_session["index"]
+                    r_session["queue"][current_idx]["amount"] = amount
+                    r_session["status"] = "RECURRING_REVIEW"
+                    await self._process_recurring_item_save(update, context, user_id)
+                except ValueError:
+                    await self._retry_request(update.message.reply_text, "❌ Número inválido. Intenta de nuevo (ej: 50000 o 50k).")
+                return
+
+        # --- 2. Check for Frequent Template Custom Amount ---
+        if user_id in self.fav_amount_sessions:
+            f_session = self.fav_amount_sessions[user_id]
+            try:
+                text = update.message.text.replace(',', '').replace('$', '').strip()
+                if text.lower().endswith('k'):
+                    amount = float(text.lower().replace('k', '')) * 1000
+                else:
+                    amount = float(text)
+                
+                t_name = f_session["name"]
+                del self.fav_amount_sessions[user_id]
+
+                template = self.storage.get_recurring_template(t_name, user_name) if self.storage else None
+                if template:
+                    await self._save_template_transaction(
+                        query=None,
+                        template=template,
+                        amount=amount,
+                        user_name=user_name,
+                        target_message_id=f_session.get("message_id"),
+                        chat_id=update.effective_chat.id
+                    )
+                else:
+                    await self._retry_request(update.message.reply_text, f"⚠️ No se encontró la plantilla '{t_name}'.")
+            except ValueError:
+                await self._retry_request(update.message.reply_text, "❌ Por favor ingresa un número válido (ej: 45000 o 45k).")
+            return
+
+        # --- 3. Check for Template Creation Wizard ---
+        if user_id in self.template_sessions:
+            t_session = self.template_sessions[user_id]
+            step = t_session.get("step")
+
+            if step == "WAITING_NAME":
+                name = update.message.text.strip()
+                if not name:
+                    await self._retry_request(update.message.reply_text, "❌ El nombre no puede estar vacío.")
+                    return
+                t_session["data"]["name"] = name
+                t_session["step"] = "WAITING_AMOUNT"
+                await self._retry_request(
+                    update.message.reply_text,
+                    f"🏷️ Nombre: *{escape_md(name)}*\n\n💵 Ingresa el *Monto por defecto* (o 0 si varía cada mes):\n(Ej: 1800000 o 1800k o 0)",
+                    parse_mode='Markdown'
+                )
+                return
+
+            elif step == "WAITING_AMOUNT":
+                try:
+                    text = update.message.text.replace(',', '').replace('$', '').strip()
+                    if text.lower().endswith('k'):
+                        amount = float(text.lower().replace('k', '')) * 1000
+                    else:
+                        amount = float(text)
+                    t_session["data"]["amount"] = amount
+                    t_session["step"] = "WAITING_SCOPE"
+
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("🏠 Familiar", callback_data="TEMPL|SCOPE_Familiar"),
+                            InlineKeyboardButton("👤 Personal", callback_data="TEMPL|SCOPE_Personal"),
+                        ],
+                        [
+                            InlineKeyboardButton("❌ Cancelar", callback_data="TEMPL|CANCEL")
+                        ]
+                    ]
+                    await self._retry_request(
+                        update.message.reply_text,
+                        f"💵 Monto: ${amount:,.2f}\n\n¿Es un gasto 🏠 Familiar o 👤 Personal?",
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode='Markdown'
+                    )
+                except ValueError:
+                    await self._retry_request(update.message.reply_text, "❌ Número inválido. Ingresa un número (ej: 50000, 50k o 0).")
+                return
+
+        # --- 4. Check for Manual Session ---
         if user_id in self.manual_sessions:
             session = self.manual_sessions[user_id]
             status = session.get("status")
-            
+
             if status == "MANUAL_WAITING_AMOUNT":
                 try:
                     text = update.message.text.replace(',', '').replace('$', '').strip()
@@ -289,46 +975,23 @@ class TransactionsBot:
                         amount = float(text.lower().replace('k', '')) * 1000
                     else:
                         amount = float(text)
-                    
+
                     session["data"]["amount"] = amount
                     session["status"] = "MANUAL_WAITING_DESC"
                     self.manual_sessions[user_id] = session
-                    
+
                     await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n\nAhora ingresa una *Descripción* (tienda, concepto, etc):", parse_mode='Markdown')
                 except ValueError:
                     await self._retry_request(update.message.reply_text, "❌ Número inválido. Intenta de nuevo (ej: 15000 o 15k).")
                 return
 
-                return
-            
-            elif status == "RECURRING_WAITING_AMOUNT":
-                try:
-                    text = update.message.text.replace(',', '').replace('$', '').strip()
-                    if text.lower().endswith('k'):
-                        amount = float(text.lower().replace('k', '')) * 1000
-                    else:
-                        amount = float(text)
-                    
-                    # Update current item
-                    current_idx = session["index"]
-                    queue = session["queue"]
-                    queue[current_idx]["amount"] = amount
-                    
-                    # Save and Next
-                    await self._process_recurring_item_save(update, context, user_id)
-                    
-                except ValueError:
-                    await self._retry_request(update.message.reply_text, "❌ Número inválido. Intenta de nuevo.")
-                return
-
             elif status == "MANUAL_WAITING_DESC":
                 desc = update.message.text.strip()
                 session["data"]["merchant"] = desc
-                from datetime import datetime
                 now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
                 session["data"]["date"] = now_str
                 session["data"]["source"] = "manual"
-                
+
                 # Insert into storage
                 if self.storage:
                     tx_id = self.storage.insert_incoming_transaction(
@@ -340,15 +1003,11 @@ class TransactionsBot:
                         raw_text=f"/manual {session['data']['amount']} {desc}"
                     )
                     session["data"]["db_id"] = tx_id
-                
-                # Cleanup session before starting async flow to avoid stuck state
+
                 transaction_data = session["data"]
                 del self.manual_sessions[user_id]
-                
+
                 await self._retry_request(update.message.reply_text, f"✅ Descripción: {desc}. Clasificando...")
-                
-                # Launch Async Classification Flow
-                # We use create_task to run independent of helpful return
                 asyncio.create_task(self.process_manual_transaction(transaction_data))
                 return
 
@@ -627,6 +1286,16 @@ class TransactionsBot:
         # QUICK step handler (1-Click Smart Quick-Save)
         if step == "QUICK":
             await self._handle_quick_save(update, context, query, value)
+            return
+
+        # FAV step handler (Frequent transactions panel)
+        if step == "FAV":
+            await self._handle_fav_callback(update, context, query, value)
+            return
+
+        # TEMPL step handler (Template creation wizard)
+        if step == "TEMPL":
+            await self._handle_templ_callback(update, context, query, value)
             return
 
         # FLOW|BACK handler

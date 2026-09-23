@@ -67,6 +67,23 @@ CREATE TABLE IF NOT EXISTS merchant_memory (
 
 ---
 
+## 📌 Capacidad: Transacciones Manuales Frecuentes y Gastos Fijos Mensuales [✅ IMPLEMENTADA]
+
+### C.1. Contexto y Problema
+Existen gastos que no generan correo bancario ni notificación automática (ej. arriendo pagado por transferencia manual, administración, servicios públicos en efectivo/PSE, mercado de plaza, aseo, mesadas). Además, a fin de mes se repiten gastos fijos periódicos que consumían tiempo ingresándolos uno a uno manualmente.
+
+### C.2. Solución Implementada
+1. **Acceso Rápido bajo Demanda (`/frecuentes`, `/f`, `/fav`):**
+   - Panel de botones con plantillas frecuentes del usuario (e.g. `[📌 Arriendo ($1.800.000)]`, `[📌 Servicios EPM ($320.000)]`).
+   - Guardado en 1 toque con monto sugerido (`[⚡ Guardar]`) o edición inmediata de monto (`[✏️ Otro Monto]`).
+2. **Revisión en Lote Mensual (`/fijos`):**
+   - Flujo secuencial a fin de ciclo que recorre los gastos mensuales configurados (`is_monthly = 1`) para aprobarlos o editar el valor de cada uno.
+3. **Gestión desde Telegram (`/nuevo_frecuente`, `/nf`, `/borrar_frecuente`):**
+   - Asistente guiado interactivo para crear plantillas especificando Nombre, Monto por defecto, Ámbito (Familiar/Personal), Categoría, Subcategoría y si aplica a revisión mensual.
+   - Sincronización bidireccional entre SQLite local (`recurring_templates`) y la pestaña `Config_Fijos` de Google Sheets.
+
+---
+
 ## 📌 Iniciativa 2: Gestión Proactiva de Presupuestos y Cierre Ponderado de Pareja
 
 ### 2.1. Contexto y Problema
