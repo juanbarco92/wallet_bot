@@ -55,7 +55,7 @@ Las transacciones están etiquetadas con su propietario (`target_user = "Juanma"
 
 ### 📄 Regla 5: Respeto a Quirks de Google Sheets y Push de Telegram
 * **Límite de grilla en Sheets:** Si la hoja alcanza su límite de filas con filtros activos, `append_row` pierde datos silenciosamente. Siempre se debe validar `sheet.row_count` y usar `sheet.add_rows(100)` antes de escribir vía `sheet.update(...)` (ver `src/loader.py`).
-* **Notificaciones Push en Telegram:** `edit_message_text` modifica el mensaje en pantalla pero no produce sonido ni notificación push en Android. Para que Tasker capture el evento, siempre se debe enviar un mensaje explícito adicional con el texto `"guardado"`.
+* **Mensajes de Confirmación en Telegram:** `edit_message_text` actualiza el mensaje interactivo en pantalla preservando siempre todos los datos originales de la transacción (Usuario, Comercio, Monto, Fecha) y añadiendo el desglose por categorías y acumulados. Se retiró el mensaje flotante redundante que decía solo `"guardado"`.
 * **Robustez en Markdown:** Los comercios suelen incluir caracteres conflictivos (ej. `*EXITO*`, `DLO*NETFLIX`). Siempre usar sanitización de Markdown y envolver `edit_message_text` en un bloque `try/except` con fallback a texto plano si Telegram rechaza las entidades Markdown.
 
 ---

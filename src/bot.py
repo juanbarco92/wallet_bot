@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from datetime import datetime
 from typing import Dict, Optional, List, Tuple, Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -260,7 +261,6 @@ class TransactionsBot:
             
             if success:
                 session["saved_count"] += 1
-                await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text="guardado")
             else:
                 await self._retry_request(context.bot.send_message, chat_id=self.chat_id, text=f"⚠️ Error guardando {item['name']}")
         
@@ -481,29 +481,30 @@ class TransactionsBot:
 
             # Confirm
             if all_saved:
-                msg_text = "💾 *Guardado Exitoso*\n\n"
+                clean_m = re.sub(r'\s+', ' ', str(transaction.get('merchant') or 'Manual').replace('*', ' ')).strip()
+                m_total = float(transaction.get('amount', 0.0))
+                m_date = str(transaction.get('date') or '?')
+                m_user = str(splits[0][3] if splits else 'User')
+
+                msg_text = (
+                    f"✅ *Guardado Exitoso* en Google Sheets\n\n"
+                    f"👤 *Usuario:* {escape_md(m_user)}\n"
+                    f"🛒 *Comercio:* {escape_md(clean_m)}\n"
+                    f"💵 *Monto:* ${m_total:,.2f}\n"
+                    f"📅 *Fecha:* {escape_md(m_date)}\n\n"
+                    f"📁 *Clasificación:*\n"
+                )
                 
-                # Fetch accumulation for first split (usually 1 for manual)
-                # If multiple, list them? 
-                # Let's iterate saved cats/splits
                 for category, scope, amount, user_who_paid, tx_type in splits:
                     accumulated = 0.0
                     if self.loader:
-                        # Fetch previous total
-                        prev_total = self.loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
-                        # Add current (since we just saved it, but sheets might lag or we want optimistic)
-                        # Actually sheets append is sync usually? But get_all_records might be cached or lagging.
-                        # Safest is prev_total + amount if we trust get_accumulated doesn't see it yet.
-                        # Wait, get_accumulated calls get_all_records. If we just appended, it SHOULD see it.
-                        # But `append_row` vs `get_all_records` consistency...
-                        # Let's assume we need to manually add if the loader doesn't guarantee instant visibility.
-                        # Or better: Just show "Acumulado a la fecha".
-                        # Optimistic addition REMOVED: Sheets is fast enough.
-                        # accumulated += amount
-                        pass
-                        
-                    msg_text += f"• *{escape_md(category)}*: ${amount:,.2f}\n"
-                    msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
+                        try:
+                            accumulated = self.loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
+                        except Exception:
+                            pass
+                    msg_text += f"• *{escape_md(category)}* ({escape_md(scope)}): ${amount:,.2f}\n"
+                    if accumulated > 0:
+                        msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
 
                 target_chat_id = self.chat_id
                 if not target_chat_id:
@@ -532,13 +533,6 @@ class TransactionsBot:
                              await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=clean_text)
                      else:
                          await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text=clean_text)
-                
-                # Effectively send the 'guardado' message so a notification is triggered
-                if target_chat_id:
-                    try:
-                        await self._retry_request(self.application.bot.send_message, chat_id=target_chat_id, text="guardado")
-                    except Exception as ge:
-                        logger.error(f"Failed to send guardado notification: {ge}")
             else:
                  msg_err = "⚠️ Error al guardar en Google Sheets."
                  target_chat_id = self.chat_id or (int(os.getenv("TELEGRAM_CHAT_ID_JUANMA")) if os.getenv("TELEGRAM_CHAT_ID_JUANMA") else None)
@@ -1033,6 +1027,7 @@ class TransactionsBot:
                             merchant = state.get("merchant") or (rec["comercio"] if rec else "Desconocido")
                             date = state.get("date") or (rec["fecha_transaccion"] if rec else datetime.now().strftime("%Y-%m-%d"))
                             user_name = state.get("user_name") or (rec["usuario"] if rec else self._get_user_label(query.from_user.id))
+                            orig_amount = state.get("total_amount") or (rec["monto_total"] if rec else (sum(s[2] for s in splits) if splits else 0.0))
                             
                             logger.info(f"Directly saving orphan/recovered transaction for message {message_id}: {splits}")
                             for cat, scope, amt, user_who_paid, tx_type in splits:
@@ -1047,7 +1042,15 @@ class TransactionsBot:
                                 self.storage.mark_as_synced(message_id, tx_id=storage_id)
 
                             # Transition from Guardando... to Guardado Exitoso!
-                            msg_text = "💾 *Guardado Exitoso* en Google Sheets.\n\n"
+                            clean_m = re.sub(r'\s+', ' ', str(merchant).replace('*', ' ')).strip()
+                            msg_text = (
+                                f"✅ *Guardado Exitoso* en Google Sheets\n\n"
+                                f"👤 *Usuario:* {escape_md(user_name)}\n"
+                                f"🛒 *Comercio:* {escape_md(clean_m)}\n"
+                                f"💵 *Monto:* ${orig_amount:,.2f}\n"
+                                f"📅 *Fecha:* {escape_md(date)}\n\n"
+                                f"📁 *Clasificación:*\n"
+                            )
                             for cat, scope, amt, user_who_paid, tx_type in splits:
                                 accumulated = 0.0
                                 if self.loader:
@@ -1055,7 +1058,7 @@ class TransactionsBot:
                                         accumulated = self.loader.get_accumulated_total(cat, scope, tx_type or "Gasto", user=user_who_paid)
                                     except Exception:
                                         pass
-                                msg_text += f"• *{escape_md(cat)}*: ${amt:,.2f}\n"
+                                msg_text += f"• *{escape_md(cat)}* ({escape_md(scope)}): ${amt:,.2f}\n"
                                 if accumulated > 0:
                                     msg_text += f"   📊 Acumulado: ${accumulated:,.2f}\n"
 
@@ -1084,14 +1087,6 @@ class TransactionsBot:
                                 logger.warning(f"Failed to edit orphan completion with Markdown ({edit_err}), retrying plain text...")
                                 clean_text = msg_text.replace('*', '')
                                 await query.edit_message_text(text=clean_text, reply_markup=next_keyboard)
-
-                            # Send the 'guardado' push notification for Tasker
-                            resolved_chat_id = query.message.chat_id if query.message else self.chat_id
-                            if resolved_chat_id:
-                                try:
-                                    await self._retry_request(self.application.bot.send_message, chat_id=resolved_chat_id, text="guardado")
-                                except Exception as notif_err:
-                                    logger.error(f"Failed to send guardado notification: {notif_err}")
 
                         except Exception as e:
                             logger.error(f"Failed direct save of recovered transaction {message_id}: {e}")

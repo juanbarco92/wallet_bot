@@ -12,8 +12,8 @@
    - **Programmatic Fix:** The code uses `sheet.col_values(1)` to count the actual rows, checks the grid boundary `sheet.row_count`, explicitly calls `sheet.add_rows(100)` to expand the sheet if the limit is exceeded (bypassing Google's auto-expansion under active filters), and uses `sheet.update(range_name=...)` to write to the exact target cells.
    - If the worksheet `"Base_Transacciones"` is not found, the loader automatically creates a new tab with that name instead of failing.
 2. **Telegram Notifications & Feedback:**
-   - In-place edits (`edit_message_text`) do not trigger push notifications/sounds on mobile devices.
-   - For robust push notifications and Tasker/automation parsing, the bot sends an explicit new `"guardado"` message on successful write.
+   - When a transaction is confirmed and saved, `edit_message_text` overwrites the interactive prompt with a comprehensive confirmation containing the full original transaction details (User, Merchant, Amount, Date) along with the assigned Category, Scope, and accumulated total.
+   - The standalone redundant push message `"guardado"` was removed at the user's request.
 3. **MIME & Forwarding Email Robustness (`src/parser.py`):**
    - Email forwarding (e.g. from Outlook/Hotmail to Gmail) often inserts carriage returns (`\r\n`). All regex patterns (amounts, merchant, and dates) are case-insensitive and support whitespace matching (`\s+`, `\r?\n`) to handle these characters properly.
    - Date regex supports matching and normalizing `YYYY/MM/DD` date formats inside transfers.

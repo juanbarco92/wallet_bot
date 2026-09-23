@@ -87,12 +87,14 @@ async def test_direct_save_transitions_to_success():
     assert mock_loader.append_transaction.called
     # 2. SQLite should have marked as synced
     assert mock_storage.mark_as_synced.called
-    # 3. Message should be edited to "Guardado Exitoso" (NOT stuck on "Guardando...")
+    # 3. Message should be edited to "Guardado Exitoso" and retain transaction description
     edit_calls = query.edit_message_text.call_args_list
     assert len(edit_calls) >= 2
-    # The final edit should be Guardado Exitoso
+    # The final edit should be Guardado Exitoso with merchant and amount preserved
     final_call_kwargs = edit_calls[-1].kwargs
-    assert "Guardado Exitoso" in final_call_kwargs.get("text", "")
-    # 4. Push notification "guardado" should be sent
-    bot.application.bot.send_message.assert_called()
-    assert any("guardado" in str(call) for call in bot.application.bot.send_message.call_args_list)
+    final_text = final_call_kwargs.get("text", "")
+    assert "Guardado Exitoso" in final_text
+    assert "D1 MEDELLIN" in final_text
+    assert "50,000.00" in final_text
+    # 4. Standalone push notification "guardado" should NOT be sent
+    assert not any("guardado" in str(call) for call in bot.application.bot.send_message.call_args_list)

@@ -148,16 +148,24 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                           if env_chat_id:
                                resolved_chat_id = int(env_chat_id)
                 try:
-                    msg_text = "💾 *Guardado Exitoso* en Google Sheets."
+                    clean_m = re.sub(r'\s+', ' ', str(tx_merchant or "Desconocido").replace('*', ' ')).strip()
+                    msg_text = (
+                        f"✅ *Guardado Exitoso* en Google Sheets\n\n"
+                        f"👤 *Usuario:* {escape_md(target_user)}\n"
+                        f"🛒 *Comercio:* {escape_md(clean_m)}\n"
+                        f"💵 *Monto:* ${tx_amount:,.2f}\n"
+                        f"📅 *Fecha:* {escape_md(tx_date or '?')}\n\n"
+                        f"📁 *Clasificación:*"
+                    )
                     
                     # Append details and accumulation
                     for category, scope, split_amount, user_who_paid, tx_type in splits:
                          try:
                              accumulated = loader.get_accumulated_total(category, scope, tx_type, user=user_who_paid)
-                             msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
+                             msg_text += f"\n• *{escape_md(category)}* ({escape_md(scope)}): ${split_amount:,.2f}\n   📊 Acumulado: ${accumulated:,.2f}"
                          except Exception as exc:
                              logger.error(f"Error calculating accumulation for UI: {exc}")
-                             msg_text += f"\n• *{escape_md(category)}*: ${split_amount:,.2f}"
+                             msg_text += f"\n• *{escape_md(category)}* ({escape_md(scope)}): ${split_amount:,.2f}"
 
                     user_filter = target_user if target_user in ("Juanma", "Leydi") else None
                     remaining_pending = current_bot.storage.get_pending_transactions(usuario=user_filter) if hasattr(current_bot, 'storage') and current_bot.storage else []
@@ -190,12 +198,6 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
                                 await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text=clean_text, reply_markup=next_keyboard)
                             except Exception as fallback_e:
                                 logger.error(f"Fallback send_message failed: {fallback_e}")
-
-                    # Effectively send the 'guardado' message so a notification is triggered
-                    try:
-                        await current_bot.application.bot.send_message(chat_id=resolved_chat_id, text="guardado")
-                    except Exception as notif_err:
-                        logger.error(f"Failed to send guardado notification: {notif_err}")
                 except Exception as ui_err:
                     logger.error(f"Error updating UI after save: {ui_err}")
 
