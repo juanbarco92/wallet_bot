@@ -93,7 +93,7 @@ gcloud logging read 'resource.type="gce_instance" AND jsonPayload.message=~".*"'
 ### C. Procedimiento Estándar de Despliegue (1-Línea)
 Una vez aprobados los tests locales y realizado el commit + push a `master`:
 ```powershell
-gcloud compute ssh instance-20251217-175237 --zone=us-central1-c --command="cd /home/juanbarco92/wallet_bot && git pull origin master && sudo systemctl restart wallet_bot && systemctl status wallet_bot --no-pager"
+gcloud compute ssh instance-20251217-175237 --zone=us-central1-c --command="sudo -u juanbarco92 git -C /home/juanbarco92/wallet_bot pull origin master && sudo systemctl restart wallet_bot && systemctl status wallet_bot --no-pager"
 ```
 
 ### D. Chequeo de Base de Datos SQLite Local (`autotrx.db`)
