@@ -37,9 +37,10 @@ class TransactionParser:
             r"Le enviaste a\s+(.*?)(?:\s+en su cuenta|\s*$)", # Nubank Transfers (Old)
             r"Se los enviaste a\s+(.*?)(?:\s+por|\. Si no reconoces|\s+con\s+tu|\s+en\s+su\s+cuenta|\.|$)", # Nubank Transfers Sent
             r"El pago de.*?a\s+(.*?)\s+fue exitoso", # Nubank Bill Payments
-            r"Pagaste en\s+(.*?)\s+con\s+(?:tu|su)\s+cuenta", # Nubank PSE / Approved Payments
+            r"Pagaste en\s+(.*?)(?:\s+por\s+(?:\$|COP|[\d\.,]+)|\s+con\s+(?:tu|su)\s+cuenta)", # Nubank PSE / Approved Payments
+            r"(?:Tu\s+)?compra\s+en\s+(.*?)(?:\s+por\s+(?:\$|COP|[\d\.,]+)|\s+con\b|\.|$)", # Nubank Card Purchases
             r"tarjeta de beneficios Glim.*?en\s+(.*?)(?:\.|$)", # Glim Payments
-            r"\ben\s+(.*?)\s*(?:,\s*el\b|\s+con\b|\s+si tienes dudas)", # General fallback 'en MERCHANT con/el'
+            r"\ben\s+(.*?)\s*(?:,\s*el\b|\s+con\b|\s+por\s+(?:\$|COP|[\d\.,]+)|\s+si tienes dudas)", # General fallback 'en MERCHANT con/el'
             r"\ba\s+([^.!?]*?)\s*,?\s*el\s+(?:\d{2}/\d{2}/\d{4}|\d{4}/\d{2}/\d{2}|\d{2}/\d{2}|\d{4}-\d{2}-\d{2})", # General fallback 'a MERCHANT el'
         ]
         
@@ -61,7 +62,17 @@ class TransactionParser:
         t = text.lower()
         s = (sender or "").lower()
 
-        # 1. Bancolombia Débito
+        # 1. Nu / Nubank (check first when Nu indicators are present to avoid generic 'tarjeta débito' fallback)
+        if "nubank" in t or re.search(r"\bnu\b", t) or "nu" in s:
+            m_digits = re.search(r"(?:terminada\s+en|\*)\s*(\d{4})", text, re.IGNORECASE)
+            last4 = m_digits.group(1) if m_digits else None
+            if "crédito" in t or "credito" in t:
+                return f"Nu Crédito *{last4}" if last4 else "Nu Crédito"
+            if "débito" in t or "debito" in t:
+                return f"Nu Débito *{last4}" if last4 else "Nu Débito"
+            return "Cuenta Nu"
+
+        # 2. Bancolombia Débito
         m = re.search(r"t\.?\s*deb(?:ito)?\s*\*+(\d{2,4})", text, re.IGNORECASE)
         if m:
             return f"Bancolombia Débito *{m.group(1)}"
@@ -71,7 +82,7 @@ class TransactionParser:
         if "t.deb" in t or "tarjeta debito" in t or "tarjeta débito" in t:
             return "Bancolombia Débito"
 
-        # 2. Bancolombia Crédito
+        # 3. Bancolombia Crédito
         m = re.search(r"t\.?\s*cred(?:ito)?\s*\*+(\d{2,4})", text, re.IGNORECASE)
         if m:
             return f"Bancolombia Crédito *{m.group(1)}"
@@ -81,7 +92,7 @@ class TransactionParser:
         if "t.cred" in t or "tarjeta credito" in t or "tarjeta crédito" in t:
             return "Bancolombia Crédito"
 
-        # 3. Bancolombia Cuenta / Ahorros / QR / Transferencia
+        # 4. Bancolombia Cuenta / Ahorros / QR / Transferencia
         m = re.search(r"(?:desde\s+(?:tu\s+)?cuenta|cta(?:\s+de)?\s+ahorros?|cuenta)\s*\*+(\d{2,4})", text, re.IGNORECASE)
         if m and ("bancolombia" in t or "bancolombia" in s or "qr" in t or "transfer" in t):
             return f"Bancolombia Cta *{m.group(1)}"
@@ -89,12 +100,12 @@ class TransactionParser:
         if m and ("bancolombia" in t or "bancolombia" in s):
             return f"Bancolombia Cta *{m.group(1)}"
 
-        # 4. RappiCard
+        # 5. RappiCard
         if "rappicard" in t or "rappi" in s or "rappicard" in s:
             m = re.search(r"(?:terminada\s+en|tarjeta|\*)\s*(\d{4})", text, re.IGNORECASE)
             return f"RappiCard *{m.group(1)}" if m else "RappiCard"
 
-        # 5. Glim
+        # 6. Glim
         if "glim" in t or "glim" in s:
             return "Glim"
 
@@ -213,6 +224,7 @@ class TransactionParser:
             if match:
                 merchant = match.group(1).strip("* \t\r\n").upper()
                 merchant = re.sub(r'\s+', ' ', merchant)
+                merchant = re.sub(r'\s+POR\s+(?:\$\s*|COP\s*|[\d\.,])[\d\.,]*.*$', '', merchant, flags=re.IGNORECASE).strip()
                 break # Stop after first match
 
         # 3. Extract Date
@@ -281,11 +293,13 @@ class TransactionParser:
             raw_json = response.text.replace("```json", "").replace("```", "").strip()
             data = json.loads(raw_json)
             
+            clean_merchant = str(data.get("merchant", "UNKNOWN")).upper()
+            clean_merchant = re.sub(r'\s+POR\s+(?:\$\s*|COP\s*|[\d\.,])[\d\.,]*.*$', '', clean_merchant, flags=re.IGNORECASE).strip()
             return {
                 "date": data.get("date", datetime.now().strftime("%d/%m/%Y %H:%M")),
                 "amount": float(data.get("amount", 0.0)),
-                "merchant": str(data.get("merchant", "UNKNOWN")).upper(),
-                "description": str(data.get("merchant", "UNKNOWN")).upper(),
+                "merchant": clean_merchant,
+                "description": clean_merchant,
                 "card": self.extract_card(text)
             }
         except Exception as e:

@@ -77,5 +77,27 @@ class TestParser(unittest.TestCase):
         card = self.parser.extract_card(text)
         self.assertEqual(card, "Cuenta Nu")
 
+    def test_parse_nubank_debito_purchase(self):
+        text = "Compra aprobada por $28.300,00 Tu compra en DE TODO EN LA TERRAZA por $28.300,00 con tu tarjeta débito terminada en 7598. Nu Plus:+ 3 puntos."
+        res = self.parser.parse(text)
+        self.assertEqual(res["amount"], 28300.0)
+        self.assertEqual(res["merchant"], "DE TODO EN LA TERRAZA")
+        self.assertEqual(res["card"], "Nu Débito *7598")
+
+    def test_parse_nubank_credito_purchase(self):
+        text = "Compra aprobada por $90.513,00 Tu compra en BW BUFFALO WINGS ILARC por $90.513,00 con tu tarjeta de crédito terminada en 1234. Nu Plus:+ 9 puntos."
+        res = self.parser.parse(text)
+        self.assertEqual(res["amount"], 90513.0)
+        self.assertEqual(res["merchant"], "BW BUFFALO WINGS ILARC")
+        self.assertEqual(res["card"], "Nu Crédito *1234")
+
+    def test_parse_nubank_diag_purchase(self):
+        text = "Compra aprobada por $15.350,00 Tu compra en CENTRO DE DIAG ESP BEL por $15.350,00 con tu tarjeta débito terminada en 7598. Nu Plus:+ 1 puntos."
+        res = self.parser.parse(text)
+        self.assertEqual(res["amount"], 15350.0)
+        self.assertEqual(res["merchant"], "CENTRO DE DIAG ESP BEL")
+        self.assertEqual(res["card"], "Nu Débito *7598")
+
 if __name__ == '__main__':
     unittest.main()
+

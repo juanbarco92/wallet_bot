@@ -24,6 +24,13 @@ class TestMerchantMemory:
         assert normalize_merchant(" *D1 * MEDELLIN* ") == "D1 MEDELLIN"
         assert normalize_merchant("NETFLIX.COM") == "NETFLIX.COM"
 
+        # 4. Trailing amounts / Nubank transaction details
+        assert normalize_merchant("DE TODO EN LA TERRAZA POR $28.300,00") == "DE TODO EN LA TERRAZA"
+        assert normalize_merchant("FARMATODO TITAN POR $243.520,00") == "FARMATODO TITAN"
+        assert normalize_merchant("BW BUFFALO WINGS ILARC POR $90.513,00") == "BW BUFFALO WINGS ILARC"
+        assert normalize_merchant("CENTRO DE DIAG ESP BEL POR $15.350,00") == "CENTRO DE DIAG ESP BEL"
+        assert normalize_merchant("TIENDA POR COP 50.000") == "TIENDA"
+
     def test_record_and_upsert_learning(self, storage):
         # First learning event
         assert storage.record_merchant_learning(
@@ -108,3 +115,46 @@ class TestMerchantMemory:
         sugg = storage.get_merchant_suggestion("GOPASS", "Juanma")
         assert sugg["is_high_confidence"] is True
         assert sugg["total_occurrences"] == 10
+
+    def test_migration_consolidates_corrupted_patterns(self, storage):
+        """Tests that legacy corrupted patterns with transaction amounts are consolidated."""
+        with storage._connection() as conn:
+            conn.execute("""
+                INSERT INTO merchant_memory (merchant_pattern, category_full, scope, tx_type, usuario, frequency)
+                VALUES ('DE TODO EN LA TERRAZA POR $28.300,00', '🏠 Casa - Mercado', 'Familiar', 'Gasto', 'Juanma', 1)
+            """)
+            conn.execute("""
+                INSERT INTO merchant_memory (merchant_pattern, category_full, scope, tx_type, usuario, frequency)
+                VALUES ('DE TODO EN LA TERRAZA POR $31.550,00', '🏠 Casa - Mercado', 'Familiar', 'Gasto', 'Juanma', 1)
+            """)
+            conn.execute("""
+                INSERT INTO transacciones_log (origen, fecha_transaccion, comercio, monto_total, usuario, estado)
+                VALUES ('tasker', '28/09/2026 10:00', 'DE TODO EN LA TERRAZA POR $28.300,00', 28300.0, 'Juanma', 'CONFIRMADA')
+            """)
+            conn.commit()
+
+            # Trigger migration
+            storage._migrate_merchant_memory(conn)
+
+        # Check merchant_memory
+        rules = storage.get_merchant_rules(usuario="Juanma")
+        terraza = [r for r in rules if r["merchant_pattern"] == "DE TODO EN LA TERRAZA"]
+        assert len(terraza) == 1
+        assert terraza[0]["frequency"] == 2
+
+        # Corrupted rows must be deleted
+        corrupted = [r for r in rules if "POR $" in r["merchant_pattern"]]
+        assert len(corrupted) == 0
+
+        # Check transacciones_log
+        with storage._connection() as conn:
+            tx = conn.execute("SELECT comercio FROM transacciones_log WHERE id = 1").fetchone()
+            assert tx["comercio"] == "DE TODO EN LA TERRAZA"
+
+        # Check 1-click suggestion now works with high confidence!
+        sugg = storage.get_merchant_suggestion("DE TODO EN LA TERRAZA", "Juanma")
+        assert sugg is not None
+        assert sugg["is_high_confidence"] is True
+        assert sugg["category_full"] == "🏠 Casa - Mercado"
+        assert sugg["total_occurrences"] == 2
+

@@ -34,6 +34,9 @@ def normalize_merchant(raw_name: str) -> str:
     # Remove aggregator prefixes
     m = re.sub(r'^(?:BOLD|DLO|CAC|PAYU|MP|MERCADOPAGO|STRIPE)\s*\*\s*', '', m, flags=re.IGNORECASE)
     
+    # Remove trailing amount details (e.g. 'POR $15.400,00', 'POR $ 15.400,00', 'POR COP 20.000', 'POR 243.520')
+    m = re.sub(r'\s+POR\s+(?:\$\s*|COP\s*|[\d\.,])[\d\.,]*.*$', '', m, flags=re.IGNORECASE)
+
     # Replace internal asterisks with spaces and strip quotes/whitespace
     m = m.replace('*', ' ').strip("\"' \t\r\n")
     
@@ -135,7 +138,51 @@ class TransactionStorage:
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_templates_user ON recurring_templates(usuario);
             """)
+            self._migrate_merchant_memory(conn)
             conn.commit()
+
+    def _migrate_merchant_memory(self, conn):
+        """
+        Idempotent cleanup of legacy merchant patterns that accidentally captured transaction amounts.
+        E.g. 'DE TODO EN LA TERRAZA POR $28.300,00' -> 'DE TODO EN LA TERRAZA'.
+        Consolidates duplicates by summing their frequencies.
+        Also cleans transacciones_log.comercio if amounts were attached.
+        """
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, merchant_pattern, category_full, scope, tx_type, usuario, frequency 
+            FROM merchant_memory 
+            WHERE merchant_pattern LIKE '%POR $%' OR merchant_pattern LIKE '%POR COP%'
+        """)
+        corrupted = [dict(r) for r in cursor.fetchall()]
+        if corrupted:
+            for row in corrupted:
+                clean_p = normalize_merchant(row["merchant_pattern"])
+                if not clean_p or clean_p == row["merchant_pattern"]:
+                    continue
+                cursor.execute("""
+                    INSERT INTO merchant_memory (
+                        merchant_pattern, category_full, scope, tx_type, usuario, frequency, last_used
+                    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(merchant_pattern, category_full, scope, usuario)
+                    DO UPDATE SET
+                        frequency = frequency + excluded.frequency,
+                        last_used = CURRENT_TIMESTAMP
+                """, (clean_p, row["category_full"], row["scope"], row.get("tx_type") or "Gasto", row["usuario"], row.get("frequency") or 1))
+                cursor.execute("DELETE FROM merchant_memory WHERE id = ?", (row["id"],))
+            logger.info(f"🧹 Migración merchant_memory: {len(corrupted)} registros con importes consolidados y corregidos.")
+
+        cursor.execute("""
+            SELECT id, comercio FROM transacciones_log
+            WHERE comercio LIKE '%POR $%' OR comercio LIKE '%POR COP%'
+        """)
+        corrupted_tx = cursor.fetchall()
+        for r in corrupted_tx:
+            clean_c = normalize_merchant(r["comercio"])
+            if clean_c and clean_c != r["comercio"]:
+                cursor.execute("UPDATE transacciones_log SET comercio = ? WHERE id = ?", (clean_c, r["id"]))
+        if corrupted_tx:
+            logger.info(f"🧹 Migración transacciones_log: {len(corrupted_tx)} comercios corregidos.")
 
     def insert_incoming_transaction(
         self,
