@@ -20,6 +20,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Silence httpx and httpcore INFO logs so Telegram Bot Tokens are never leaked in log files or GCP Cloud Logging
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 # Initialize GCP Cloud Logging if running inside Google Cloud
 try:
     import google.cloud.logging

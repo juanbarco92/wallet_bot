@@ -6,3 +6,6 @@ __pycache__/
 .ipynb_checkpoints/
 *.db
 autotrx.db
+*.log
+resources/downloaded-logs*
+resources/*.json
