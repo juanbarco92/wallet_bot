@@ -53,8 +53,7 @@ async def test_direct_save_transitions_to_success():
     mock_loader.get_accumulated_total.return_value = 150000.0
 
     mock_storage = MagicMock()
-    bot = TransactionsBot(loader=mock_loader)
-    bot.storage = mock_storage
+    bot = TransactionsBot(loader=mock_loader, storage=mock_storage)
     bot.application = MagicMock()
     bot.application.bot = MagicMock()
     bot.application.bot.send_message = AsyncMock()

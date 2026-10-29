@@ -69,6 +69,16 @@ class SheetsLoader:
             tx_date = transaction.get("date")
             description = transaction.get("merchant") # Maps to Description/Merchant
             
+            # Robust user normalization: prevent saving "User" to Google Sheets
+            if not user_who_paid or str(user_who_paid).strip() in ("User", ""):
+                user_who_paid = transaction.get("user_name") or transaction.get("usuario") or transaction.get("user") or "Juanma"
+            if str(user_who_paid).strip() in ("Juan", "Juanma", "Juan Manuel"):
+                user_who_paid = "Juanma"
+            elif str(user_who_paid).strip() in ("Ley", "Leydi", "Leidy"):
+                user_who_paid = "Leydi"
+            elif str(user_who_paid).strip() == "User":
+                user_who_paid = "Juanma"
+            
             # Row Schema: 
             # 1. Fecha (Transaction Date)
             # 2. Timestamp (Insertion Time)

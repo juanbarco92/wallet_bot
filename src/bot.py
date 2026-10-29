@@ -33,8 +33,9 @@ def escape_md(text):
 from telegram.request import HTTPXRequest
 
 class TransactionsBot:
-    def __init__(self, loader=None, token=None, notifier=None, storage=None, parser=None):
+    def __init__(self, loader=None, token=None, notifier=None, storage=None, parser=None, default_user: Optional[str] = None):
         self.token = token or TOKEN
+        self.default_user = default_user
         self.notifier = notifier # Callback for notifications (e.g., email)
         self.loader = loader
         self.storage = storage if storage is not None else TransactionStorage()
@@ -126,8 +127,9 @@ class TransactionsBot:
 
     async def start_manual_flow(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Starts the manual transaction registration."""
-        user_id = update.effective_user.id
-        self.chat_id = update.effective_chat.id
+        user_id = update.effective_user.id if update.effective_user else None
+        self.chat_id = update.effective_chat.id if update.effective_chat else self.chat_id
+        user_label = self._get_user_label(user_id)
         
         if context.args:
             try:
@@ -147,7 +149,8 @@ class TransactionsBot:
                         "merchant": desc,
                         "date": now_str,
                         "source": "manual",
-                        "card": "Manual"
+                        "card": "Manual",
+                        "user_name": user_label
                     }
                     if self.storage:
                         tx_id = self.storage.insert_incoming_transaction(
@@ -155,18 +158,18 @@ class TransactionsBot:
                             comercio=desc,
                             monto=amount,
                             fecha=now_str,
-                            usuario=self._get_user_label(),
+                            usuario=user_label,
                             raw_text=f"/manual {amount} {desc}"
                         )
                         transaction_data["db_id"] = tx_id
                     
                     await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n✅ Descripción: {desc}. Clasificando...", parse_mode='Markdown')
-                    asyncio.create_task(self.process_manual_transaction(transaction_data))
+                    asyncio.create_task(self.process_manual_transaction(transaction_data, user_name=user_label))
                     return
                 else:
                     self.manual_sessions[user_id] = {
                         "status": "MANUAL_WAITING_DESC",
-                        "data": {"amount": amount}
+                        "data": {"amount": amount, "user_name": user_label}
                     }
                     await self._retry_request(update.message.reply_text, f"💰 Monto: ${amount:,.2f}\n\nAhora ingresa una *Descripción* (tienda, concepto, etc):", parse_mode='Markdown')
                     return
@@ -990,7 +993,9 @@ class TransactionsBot:
 
             elif status == "MANUAL_WAITING_DESC":
                 desc = update.message.text.strip()
+                user_label = session["data"].get("user_name") or self._get_user_label(user_id)
                 session["data"]["merchant"] = desc
+                session["data"]["user_name"] = user_label
                 now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
                 session["data"]["date"] = now_str
                 session["data"]["source"] = "manual"
@@ -1002,7 +1007,7 @@ class TransactionsBot:
                         comercio=desc,
                         monto=session["data"]["amount"],
                         fecha=now_str,
-                        usuario=self._get_user_label(),
+                        usuario=user_label,
                         raw_text=f"/manual {session['data']['amount']} {desc}"
                     )
                     session["data"]["db_id"] = tx_id
@@ -1011,7 +1016,7 @@ class TransactionsBot:
                 del self.manual_sessions[user_id]
 
                 await self._retry_request(update.message.reply_text, f"✅ Descripción: {desc}. Clasificando...")
-                asyncio.create_task(self.process_manual_transaction(transaction_data))
+                asyncio.create_task(self.process_manual_transaction(transaction_data, user_name=user_label))
                 return
 
         # --- 2. Existing Split Flow (Waiting for Split Input) ---
@@ -1100,12 +1105,13 @@ class TransactionsBot:
         except ValueError:
             await self._retry_request(update.message.reply_text, "❌ Por favor ingresa un número válido (ej: 50000 o 50k).")
 
-    async def process_manual_transaction(self, transaction: Dict):
+    async def process_manual_transaction(self, transaction: Dict, user_name: Optional[str] = None):
         """Orchestrates the classification and saving for manual transactions."""
-        logger.info(f"Processing manual transaction: {transaction}")
+        resolved_user = user_name or transaction.get("user_name") or transaction.get("usuario") or transaction.get("user") or self._get_user_label() or self.default_user or "Juanma"
+        logger.info(f"Processing manual transaction for {resolved_user}: {transaction}")
         
         # 1. Ask User (Reusing existing flow)
-        splits, message_id = await self.ask_user_for_category(transaction)
+        splits, message_id = await self.ask_user_for_category(transaction, user_name=resolved_user)
         
         if not splits:
             if self.storage and message_id:
@@ -1898,15 +1904,21 @@ class TransactionsBot:
              scope = state.get("scope", "Personal")
              
         
-        # Capture User Name
-        user_name = "User"
-        if update and getattr(update, "effective_user", None):
-            fn = getattr(update.effective_user, "first_name", None)
-            if isinstance(fn, str) and fn:
-                user_name = fn
-            else:
-                uid = getattr(update.effective_user, "id", None)
-                user_name = self._get_user_label(uid if isinstance(uid, int) else None)
+        # Capture User Name: prioritize state, fallback to user_id/bot owner
+        user_name = state.get("user_name")
+        if not user_name or user_name == "User":
+            uid = getattr(update.effective_user, "id", None) if update and getattr(update, "effective_user", None) else None
+            user_name = self._get_user_label(uid if isinstance(uid, int) else None)
+        
+        # Normalize friendly name to Juanma or Leydi
+        if user_name in ("Juan", "Juanma", "Juan Manuel"):
+            user_name = "Juanma"
+        elif user_name in ("Ley", "Leydi", "Leidy"):
+            user_name = "Leydi"
+        elif not user_name or user_name == "User":
+            user_name = self.default_user or "Juanma"
+
+        state["user_name"] = user_name
         
         # Capture Type (default to Gasto if missing or None)
         tx_type = state.get("current_tx_type") or "Gasto"
@@ -1976,6 +1988,14 @@ class TransactionsBot:
         Initiates the classification flow.
         Returns: Tuple(SplitsList, MessageID)
         """
+        # Resolve friendly user name (avoid 'User')
+        if not user_name or user_name == "User":
+            user_name = transaction.get("user_name") or transaction.get("usuario") or self.default_user or "Juanma"
+        if user_name in ("Juan", "Juanma", "Juan Manuel"):
+            user_name = "Juanma"
+        elif user_name in ("Ley", "Leydi", "Leidy"):
+            user_name = "Leydi"
+
         # Determine Chat ID
         chat_id_to_use = target_chat_id
         
@@ -2330,7 +2350,9 @@ class TransactionsBot:
                 return "Juanma"
             if leydi_id and str(self.chat_id) == str(leydi_id):
                 return "Leydi"
-        return "User"
+        if self.default_user:
+            return self.default_user
+        return "Juanma"
 
     def _parse_context_from_message_text(self, text: str) -> Dict[str, Any]:
         """
@@ -2338,11 +2360,12 @@ class TransactionsBot:
         Handles both initial alerts and in-flow context headers.
         """
         import re
+        fallback_user = self.default_user or "Juanma"
         result = {
             "merchant": "Desconocido",
             "amount": 0.0,
             "date": "?",
-            "user": "User",
+            "user": fallback_user,
             "card": None
         }
         if not text:
@@ -2375,11 +2398,19 @@ class TransactionsBot:
         # 5. User: 👤 Name or (Name)
         u_match = re.search(r"👤\s*([^\n\(\)]+)", text)
         if u_match:
-            result["user"] = u_match.group(1).strip()
+            found_user = u_match.group(1).strip()
+            if found_user in ("Juan", "Juanma", "Juan Manuel"):
+                result["user"] = "Juanma"
+            elif found_user in ("Ley", "Leydi", "Leidy"):
+                result["user"] = "Leydi"
+            elif found_user != "User":
+                result["user"] = found_user
         else:
             p_match = re.search(r"\((Juanma|Leydi|User)\)", text, re.IGNORECASE)
             if p_match:
-                result["user"] = p_match.group(1).capitalize()
+                matched_user = p_match.group(1).capitalize()
+                if matched_user != "User":
+                    result["user"] = matched_user
                 
         return result
 
@@ -2426,6 +2457,12 @@ class TransactionsBot:
         state = self.flow_data.get(message_id, {})
         merchant = state.get("merchant", "Desconocido")
         user_name = state.get("user_name") or self._get_user_label(query.from_user.id if query.from_user else None)
+        if user_name in ("Juan", "Juanma", "Juan Manuel"):
+            user_name = "Juanma"
+        elif user_name in ("Ley", "Leydi", "Leidy"):
+            user_name = "Leydi"
+        elif not user_name or user_name == "User":
+            user_name = self.default_user or "Juanma"
         total = state.get("total_amount", 0.0)
 
         suggestion = state.get("suggestion")
@@ -2488,11 +2525,19 @@ class TransactionsBot:
             merchant = state.get("merchant") or (rec["comercio"] if rec else "Desconocido")
             date = state.get("date") or (rec["fecha_transaccion"] if rec else datetime.now().strftime("%Y-%m-%d"))
             user_name = state.get("user_name") or (rec["usuario"] if rec else self._get_user_label(query.from_user.id if query.from_user else None))
+            if user_name in ("Juan", "Juanma", "Juan Manuel"):
+                user_name = "Juanma"
+            elif user_name in ("Ley", "Leydi", "Leidy"):
+                user_name = "Leydi"
+            elif not user_name or user_name == "User":
+                user_name = self.default_user or "Juanma"
             orig_amount = state.get("total_amount") or (rec["monto_total"] if rec else (sum(s[2] for s in splits) if splits else 0.0))
             pattern_to_record = (state.get("suggestion") or {}).get("merchant_pattern") or merchant
 
             logger.info(f"Directly saving orphan/recovered transaction for message {message_id}: {splits}")
             for cat, scope, amt, user_who_paid, tx_type in splits:
+                if not user_who_paid or user_who_paid == "User":
+                    user_who_paid = user_name
                 t_copy = {
                     'amount': amt,
                     'merchant': merchant,

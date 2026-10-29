@@ -148,6 +148,8 @@ async def process_email_task(email_data: dict, bots: dict, gmail: GmailClient, p
              # Create a copy or modify amount
              t_copy = transaction.copy()
              t_copy['amount'] = split_amount
+             if not user_who_paid or user_who_paid == "User":
+                 user_who_paid = target_user
              
              success = loader.append_transaction(t_copy, category, scope=scope, user_who_paid=user_who_paid, transaction_type=tx_type)
              if not success:
@@ -336,7 +338,8 @@ async def tasker_webhook_handler(request):
             "date": now_str,
             "source": "tasker",
             "card": parsed_card or "Tasker",
-            "raw_text": str(texto or "")
+            "raw_text": str(texto or ""),
+            "user_name": "Juanma"
         }
         
         bot_juanma = request.app["bot_juanma"]
@@ -358,7 +361,7 @@ async def tasker_webhook_handler(request):
             except Exception as e:
                 logger.error(f"Error buffering Tasker transaction in SQLite: {e}")
 
-        asyncio.create_task(bot_juanma.process_manual_transaction(transaction_data))
+        asyncio.create_task(bot_juanma.process_manual_transaction(transaction_data, user_name="Juanma"))
         logger.info(f"Successfully processed Tasker transaction: {transaction_data}")
         
         return web.json_response({"status": "success", "message": "Transaction sent to bot", "data": transaction_data})
@@ -489,7 +492,7 @@ async def main():
     token_leydi = os.getenv("TELEGRAM_TOKEN_LEY")
     
     # Pass notifier and storage to bot
-    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user, storage=storage, parser=parser)
+    bot_juanma = TransactionsBot(token=token_juanma, loader=loader, notifier=notify_user, storage=storage, parser=parser, default_user="Juanma")
     bot_leydi = None
     
     # Start Polling
@@ -500,7 +503,7 @@ async def main():
     bots = {"Juanma": bot_juanma}
 
     if token_leydi:
-        bot_leydi = TransactionsBot(token=token_leydi, loader=loader, storage=storage, parser=parser) # Leydi relies on Juanma's stability or separate handler?
+        bot_leydi = TransactionsBot(token=token_leydi, loader=loader, storage=storage, parser=parser, default_user="Leydi") # Leydi relies on Juanma's stability or separate handler?
         await bot_leydi.start_polling()
         bots["Leydi"] = bot_leydi
         logger.info("Bot Leydi started.")
